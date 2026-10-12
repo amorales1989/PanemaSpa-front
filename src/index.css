@@ -690,3 +690,4 @@ textarea.input { resize: vertical; font: inherit; }
   .resumen-productos-datos > div:nth-child(3) { padding-left: 0; border-left: 0; }
   .resumen-productos-head .segmented { width: 100%; }
 }
+.icon-btn.icon-peligro:hover { color: var(--egreso); background: var(--egreso-soft); }

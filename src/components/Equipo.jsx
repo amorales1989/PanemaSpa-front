@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Copy, KeyRound, UserPlus } from 'lucide-react'
+import { Copy, KeyRound, Trash2, UserPlus } from 'lucide-react'
 import { api } from '../lib/api'
 import Modal from './Modal'
 import { haceCuanto } from '../pages/admin/adminFormato'
@@ -117,6 +117,14 @@ export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
     mostrarAviso('Usuario actualizado')
   })
 
+  // Quita el acceso a la empresa; lo que registró (ventas, compras, mermas) queda con su nombre
+  const eliminar = conError(async (m) => {
+    if (!window.confirm(`¿Eliminar a ${m.nombre} del equipo?\n\nDeja de poder entrar a la empresa de inmediato. Las ventas y registros que hizo se conservan con su nombre.`)) return
+    await api(`${base}/${m.membresiaId}`, { metodo: 'DELETE' })
+    await cargar()
+    mostrarAviso(`${m.nombre} ya no es parte del equipo`)
+  })
+
   const restablecer = conError(async (m) => {
     if (!window.confirm(`¿Generar una contraseña nueva para ${m.nombre}? Se cerrarán sus sesiones abiertas.`)) return
     const r = await api(`${base}/${m.membresiaId}/restablecer-password`, { metodo: 'POST' })
@@ -163,6 +171,9 @@ export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
                     </button>
                     <button className="icon-btn" title="Restablecer contraseña" aria-label={`Restablecer contraseña de ${m.nombre}`} onClick={() => restablecer(m)}>
                       <KeyRound size={18} />
+                    </button>
+                    <button className="icon-btn icon-peligro" title="Eliminar del equipo" aria-label={`Eliminar a ${m.nombre} del equipo`} onClick={() => eliminar(m)}>
+                      <Trash2 size={18} />
                     </button>
                     </>)}
                   </td>
