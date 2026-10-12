@@ -17,6 +17,9 @@ function Delta({ valor, subirEsBueno = true }) {
   return <span className={`delta ${valor >= 0 === subirEsBueno ? 'bien' : 'mal'}`}><Flecha size={13} />{Math.abs(valor).toFixed(0)}%</span>
 }
 
+// Bajo el valor solo se muestra la flecha si hubo un cambio real
+const hayVariacion = (v) => Number.isFinite(v) && Math.abs(v) >= 0.5
+
 const cant = (n, unidad) => `${fmtNum(Math.round(n * 10) / 10)} ${unidad}`
 
 export default function Productos() {
@@ -81,7 +84,8 @@ export default function Productos() {
   const resumen = tab === 'productos'
     ? [
         ['Ventas', dinero(filas.reduce((t, p) => t + p.ventas, 0))],
-        ['Margen estimado', dinero(filas.reduce((t, p) => t + p.margen, 0))],
+        // Sin costo cargado no hay margen que calcular
+        ['Margen estimado', filas.some((p) => p.costo > 0) ? dinero(filas.filter((p) => p.costo > 0).reduce((t, p) => t + p.margen, 0)) : 'Falta el costo'],
         ['Producto estrella', filas[0]?.nombre],
         ['Merma de productos', dinero(filas.reduce((t, p) => t + p.merma, 0))],
       ]
@@ -138,9 +142,9 @@ export default function Productos() {
                   {ajustaPrecios && <th className="col-check" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={todosMarcados} onChange={marcarTodos} aria-label="Seleccionar todos los productos visibles" />
                   </th>}
-                  <th className="ocultar-movil">Código</th><th>Producto</th><th className="num ocultar-movil">Precio</th>
+                  <th>Producto</th><th className="num ocultar-movil">Precio</th>
                   <th className="num ocultar-movil">Vendidos</th><th className="num">Ventas</th><th className="num ocultar-movil">Margen est.</th>
-                  <th className="num ocultar-movil">Merma</th><th className="num ocultar-movil">vs anterior</th><th />
+                  <th className="num ocultar-medio">Merma</th><th />
                 </tr>
               </thead>
               <tbody>
@@ -149,19 +153,19 @@ export default function Productos() {
                     {ajustaPrecios && <td className="col-check" onClick={(e) => { e.stopPropagation(); marcar(p.id) }}>
                       <input type="checkbox" checked={seleccion.has(p.id)} onChange={() => {}} aria-label={`Seleccionar ${p.nombre}`} />
                     </td>}
-                    <td className="ocultar-movil"><span className="tile-codigo">#{p.codigo}</span></td>
                     <td>
                       <div className="celda-producto">
                         <ImagenProducto producto={{ ...p, tipo: 'producto' }} tamano={40} />
-                        <div><b>{p.nombre}</b><div className="sub">{p.categoria}</div></div>
+                        <div><b>{p.nombre}</b><div className="sub">#{p.codigo} · {p.categoria}</div></div>
                       </div>
                     </td>
                     <td className="num ocultar-movil">{dinero(p.precio)}{p.unidad !== 'un' && <span className="sub"> /{p.unidad}</span>}</td>
                     <td className="num ocultar-movil">{cant(p.vendidos, p.unidad)}</td>
-                    <td className="num"><b>{dinero(p.ventas)}</b></td>
-                    <td className="num ocultar-movil">{dinero(p.margen)}</td>
-                    <td className="num ocultar-movil" style={{ color: p.merma ? 'var(--merma)' : 'var(--muted)' }}>{p.merma ? dinero(p.merma) : '—'}</td>
-                    <td className="num ocultar-movil"><Delta valor={p.tendencia} /></td>
+                    <td className="num"><b>{dinero(p.ventas)}</b>{hayVariacion(p.tendencia) && <div className="sub-delta"><Delta valor={p.tendencia} /></div>}</td>
+                    <td className="num ocultar-movil">
+                      {p.costo > 0 ? dinero(p.margen) : <span className="sub" title="Carga el costo del producto para calcular el margen">— sin costo</span>}
+                    </td>
+                    <td className="num ocultar-medio" style={{ color: p.merma ? 'var(--merma)' : 'var(--muted)' }}>{p.merma ? dinero(p.merma) : '—'}</td>
                     <td className="num col-acciones">
                       {gestiona && <button className="icon-btn" onClick={(e) => editar(e, p)} aria-label={`Editar ${p.nombre}`} title="Editar"><Pencil size={15} /></button>}
                       <ChevronRight size={16} color="var(--muted)" className="ocultar-movil" />
@@ -174,20 +178,18 @@ export default function Productos() {
             <>
               <thead>
                 <tr>
-                  <th className="ocultar-movil">Código</th><th>Insumo</th><th className="num ocultar-movil">Comprado</th><th className="num">Gasto</th>
-                  <th className="num ocultar-movil">Precio actual</th><th className="num ocultar-movil">Var. precio</th><th className="num ocultar-movil">Merma</th><th />
+                  <th>Insumo</th><th className="num ocultar-movil">Comprado</th><th className="num">Gasto</th>
+                  <th className="num ocultar-movil">Precio actual</th><th className="num ocultar-medio">Merma</th><th />
                 </tr>
               </thead>
               <tbody>
                 {visibles.map((p) => (
                   <tr key={p.id} onClick={() => navigate(`/productos/insumo/${p.id}`)}>
-                    <td className="ocultar-movil"><span className="tile-codigo">#{p.codigo}</span></td>
-                    <td><b>{p.nombre}</b><div className="sub">{p.categoria}</div></td>
+                    <td><b>{p.nombre}</b><div className="sub">#{p.codigo} · {p.categoria}</div></td>
                     <td className="num ocultar-movil">{cant(p.comprado, p.unidad)}</td>
                     <td className="num"><b>{dinero(p.gasto)}</b></td>
-                    <td className="num ocultar-movil">{dinero(p.precio)}<span className="sub"> /{p.unidad}</span></td>
-                    <td className="num ocultar-movil"><Delta valor={p.variacion} subirEsBueno={false} /></td>
-                    <td className="num ocultar-movil" style={{ color: p.merma ? 'var(--merma)' : 'var(--muted)' }}>{p.merma ? dinero(p.merma) : '—'}</td>
+                    <td className="num ocultar-movil">{dinero(p.precio)}<span className="sub"> /{p.unidad}</span>{hayVariacion(p.variacion) && <div className="sub-delta"><Delta valor={p.variacion} subirEsBueno={false} /></div>}</td>
+                    <td className="num ocultar-medio" style={{ color: p.merma ? 'var(--merma)' : 'var(--muted)' }}>{p.merma ? dinero(p.merma) : '—'}</td>
                     <td className="num col-acciones">
                       {gestiona && <button className="icon-btn" onClick={(e) => editar(e, p)} aria-label={`Editar ${p.nombre}`} title="Editar"><Pencil size={15} /></button>}
                       <ChevronRight size={16} color="var(--muted)" className="ocultar-movil" />
@@ -200,7 +202,7 @@ export default function Productos() {
         </table>
         {visibles.length === 0 && <div className="vacio">No hay resultados.</div>}
       </div>
-      {tab === 'productos' && <p className="sub" style={{ marginTop: 10 }}>Margen estimado = ventas − (unidades vendidas × costo del producto). Marca productos con la casilla para cambiar varios precios a la vez.</p>}
+      {tab === 'productos' && <p className="sub" style={{ marginTop: 10 }}>Margen estimado = ventas − (unidades vendidas × costo). Los productos sin costo no se cuentan. Marca productos con la casilla para cambiar varios precios a la vez.</p>}
 
       {tab === 'productos' && seleccion.size > 0 && (
         <div className="barra-seleccion" role="region" aria-label="Productos seleccionados">

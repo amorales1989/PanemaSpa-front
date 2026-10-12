@@ -650,3 +650,27 @@ textarea.input { resize: vertical; font: inherit; }
 @media (max-width: 520px) {
   .grid-proveedores { grid-template-columns: 1fr; }
 }
+
+/* ---------- Pantallas medianas y bajas (notebooks, zoom 125 %) ---------- */
+.sub-delta { margin-top: 2px; font-size: 12px; }
+.sub-delta .sub { font-size: 12px; }
+.logo-text small { white-space: nowrap; }
+@media (max-width: 1400px) {
+  .ocultar-medio { display: none; }
+}
+/* Menú lateral compacto cuando la pantalla es baja: que entre todo sin scroll */
+@media (min-width: 861px) and (max-height: 860px) {
+  .sidebar { padding: 16px 12px; gap: 2px; }
+  .logo { padding: 2px 6px 14px; }
+  .logo-mark { width: 34px; height: 34px; font-size: 19px; }
+  .logo-text { font-size: 19px; }
+  .nav-link { padding: 8px 12px; font-size: 14.5px; }
+  .acciones-sidebar { gap: 6px; }
+  .btn.btn-venta { padding: 10px; font-size: 14px; }
+  .btn-registrar { padding: 9px; font-size: 14px; }
+  .cuenta { margin-top: 4px; padding-top: 8px; }
+}
+@media (min-width: 861px) and (max-height: 720px) {
+  .nav-link { padding: 6px 12px; }
+  .logo { padding-bottom: 8px; }
+}
