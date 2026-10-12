@@ -1,6 +1,6 @@
 # Checklist de entrega: Panema en producción (Fase 7)
 
-Revisión hecha el 12/10/2026. ✅ hecho · ⚠️ pendiente.
+Revisión hecha el 12/10/2026. ✅ hecho · ⚠️ pendiente · ⏸️ postergado por decisión del cliente.
 
 ## 1. Datos y respaldos (antes de cargar datos reales)
 
