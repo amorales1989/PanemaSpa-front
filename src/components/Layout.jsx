@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText } from 'lucide-react'
+import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText, ShieldCheck } from 'lucide-react'
 import Registrar from './Registrar'
 import DetalleRegistro from './DetalleRegistro'
 import { useDatos } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
 import { dinero } from '../lib/format'
 
 const NAV = [
@@ -27,6 +28,7 @@ export default function Layout() {
   const secundarias = NAV.slice(4)
   const enSecundaria = secundarias.some((n) => pathname.startsWith(n.to))
   const { toast, exito } = useDatos()
+  const { usuario } = useAuth()
 
   // Atajo de teclado: "V" abre el registro de venta (si no se está escribiendo)
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function Layout() {
         {NAV.map(({ to, label, Icono }) => (
           <NavLink key={to} to={to} end={to === '/'} className="nav-link"><Icono size={20} />{label}</NavLink>
         ))}
+        {usuario?.esSuperadmin && <NavLink to="/admin" className="nav-link"><ShieldCheck size={20} />Plataforma</NavLink>}
         <div className="acciones-sidebar">
           <button className="btn btn-venta" onClick={() => setRegistrando('venta')}>
             <ShoppingBag size={18} /> Registrar venta <kbd>V</kbd>

@@ -534,3 +534,46 @@ h1, h2, h3 { margin: 0; }
   .btn.acceso-venta { flex-basis: 100%; }
   .btn.acceso { flex: 1; padding: 14px; }
 }
+
+/* ---------- Login ---------- */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.login-card { width: 100%; max-width: 400px; padding: 32px 28px; }
+.login-logo { padding: 0 0 8px; color: var(--brand); }
+.btn:disabled { opacity: 0.6; cursor: default; }
+
+/* ---------- Panel de plataforma ---------- */
+.admin-usuario { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; margin-bottom: 4px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
+.admin-usuario svg { flex-shrink: 0; margin-top: 2px; opacity: 0.8; }
+.admin-usuario strong { display: block; color: #fff; }
+.admin-usuario span { display: block; opacity: 0.65; word-break: break-all; }
+.nav-boton { border: 0; background: transparent; width: 100%; text-align: left; font-size: 15px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; vertical-align: middle; }
+.badge.bien { background: var(--ingreso-soft); color: var(--ingreso); }
+.badge.mal { background: var(--egreso-soft); color: var(--egreso); }
+.badge.aviso { background: var(--merma-soft); color: #8a5310; }
+.texto-alerta { color: var(--egreso); font-weight: 600; }
+.tabla-scroll { overflow-x: auto; }
+.tabla-scroll .tabla { min-width: 560px; }
+.btn.btn-sm { padding: 8px 12px; font-size: 13px; }
+.volver { margin-bottom: 12px; }
+.datos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.dato span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+.dato strong { display: block; font-size: 17px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+@media (max-width: 860px) {
+  /* En el panel no hay barra inferior: el menú lateral pasa a ser una barra superior */
+  .admin-app { flex-direction: column; }
+  .admin-app .sidebar {
+    display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; width: 100%; height: auto;
+    position: static; padding: 12px 16px; gap: 4px;
+  }
+  .admin-app .logo { padding: 0 8px 0 0; margin-right: auto; }
+  .admin-app .acciones-sidebar { margin-top: 0; flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .admin-app .admin-usuario { display: none; }
+  .admin-app .nav-link { padding: 8px 10px; font-size: 14px; }
+  .admin-app .nav-boton { width: auto; }
+  .admin-app .main { padding-bottom: 32px; }
+  .admin-app .toast { bottom: 24px; }
+  /* Tabla de empresas: en el celular solo empresa, plan y estado */
+  .admin-app .tabla-scroll .tabla.compacta-movil { min-width: 0; }
+}
