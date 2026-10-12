@@ -580,3 +580,11 @@ h1, h2, h3 { margin: 0; }
 .badge.fundadora { background: var(--brand-soft); color: var(--brand); }
 .page-head h1 .badge { font-family: 'Inter', sans-serif; font-size: 13px; letter-spacing: 0; }
 .input:disabled { opacity: 0.5; }
+.clave-temporal { display: flex; flex-direction: column; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.clave-temporal span { display: block; font-size: 12px; color: var(--muted); }
+.clave-temporal strong { word-break: break-all; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 18px; letter-spacing: 0.06em; }
+.input.input-sm { padding: 7px 10px; font-size: 14px; width: auto; min-width: 130px; }
+.acciones-fila { white-space: nowrap; text-align: right; }
+.acciones-fila .icon-btn { display: inline-grid; vertical-align: middle; }
+.fila-apagada td > *:not(.acciones-fila *) { opacity: 0.6; }

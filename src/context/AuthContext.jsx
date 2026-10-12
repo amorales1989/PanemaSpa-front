@@ -46,8 +46,8 @@ export function AuthProvider({ children }) {
   )
 
   const value = useMemo(
-    () => ({ ...estado, iniciarSesion, cerrarSesion, cambiarPassword }),
-    [estado, iniciarSesion, cerrarSesion, cambiarPassword],
+    () => ({ ...estado, iniciarSesion, cerrarSesion, cambiarPassword, recargarPerfil: cargarPerfil }),
+    [estado, iniciarSesion, cerrarSesion, cambiarPassword, cargarPerfil],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

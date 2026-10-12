@@ -4,7 +4,8 @@ import { ArrowLeft, Ban, CalendarPlus, Check, RotateCcw, Star } from 'lucide-rea
 import { api } from '../../lib/api'
 import { dinero } from '../../lib/format'
 import Modal from '../../components/Modal'
-import { ESTADO_EMPRESA, ESTADO_SUSCRIPCION, fecha, haceCuanto, sumarDias } from './adminFormato'
+import AdminUsuarios from './AdminUsuarios'
+import { ESTADO_EMPRESA, ESTADO_SUSCRIPCION, fecha, sumarDias } from './adminFormato'
 
 const ESTADOS_SUSCRIPCION = ['prueba', 'activa', 'vencida', 'cancelada']
 
@@ -189,23 +190,7 @@ export default function AdminEmpresa() {
       </div>
 
       <div className="grid grid-2">
-        <div className="card">
-          <div className="card-head"><h2>Usuarios</h2><span className="sub">{empresa.usuarios.length}</span></div>
-          <div className="tabla-scroll">
-            <table className="tabla">
-              <thead><tr><th>Usuario</th><th>Rol</th><th>Último acceso</th></tr></thead>
-              <tbody>
-                {empresa.usuarios.map((u) => (
-                  <tr key={u.membresiaId}>
-                    <td><strong>{u.nombre}</strong><div className="sub">{u.email}</div></td>
-                    <td>{u.rol}{u.estado !== 'activo' && <span className="badge mal">Suspendido</span>}</td>
-                    <td>{haceCuanto(u.ultimoAccesoEn)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminUsuarios empresaId={empresa.id} />
         <div className="card">
           <div className="card-head"><h2>Historial de suscripciones</h2></div>
           <table className="tabla">
