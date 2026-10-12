@@ -340,6 +340,8 @@ Pasar `lib/stats.js` y `reportes/datos.js` a SQL. Cada endpoint recibe `desde`, 
 
 ### Fase 8: Monetización y plataforma (cuando haya un segundo cliente)
 
+> **Panema SpA, la empresa fundadora:** tiene contrato indefinido y sin costo, con el plan interno "Fundador" y sin fecha de vencimiento. Usa el sistema **como su desarrollo propio**, así que nunca debe ver planes, pruebas, pagos, límites ni la palabra "suscripción". El back marca estas empresas con `modoPropio: true` en `/v1/auth/yo`. Toda pantalla o aviso de facturación del front tiene que ocultarse cuando `modoPropio` es `true`.
+
 1. **Planes y límites**: middleware `limite('usuarios' | 'productos' | 'sucursales')` que compara contra `planes`. Las funciones premium (roles personalizados, varias sucursales) se controlan por plan.
 2. **Cobro con MercadoPago** (ya lo usas en back-rubi), con suscripciones o preapproval:
    - Webhook → `pagos_suscripcion` (idempotente por `proveedor_ref`) → actualiza `suscripciones`.
