@@ -4,20 +4,18 @@ Revisión hecha el 12/10/2026. ✅ hecho · ⚠️ pendiente.
 
 ## 1. Datos y respaldos (antes de cargar datos reales)
 
-- ⚠️ **Respaldos automáticos de la base.** Hoy hay **0 respaldos programados**. En Coolify:
-  1. **Settings → S3 Storages → + Add**. Cloudflare R2 da 10 GB gratis: crear un bucket `panema-respaldos` y un token de API con permiso de lectura y escritura sobre ese bucket.
-  2. Recurso de la base → **Backups → + Add**, con frecuencia `0 4 * * *` (todos los días a las 4:00) y **Save to S3** activado.
-  3. Ejecutar un respaldo a mano y **probar la restauración** una vez, en una base de prueba.
+- ✅ **Respaldo diario de la base** en Coolify (`0 4 * * *` UTC, 14 copias). El primero se hizo el 12/10 y se **restauró en una base de prueba**: quedó idéntico a producción.
+- ⏸️ **Copia fuera del VPS** (Backblaze B2 o Cloudflare R2), postergada por decisión del cliente. Sin ella, perder el VPS significa perder los respaldos. Mientras tanto se puede bajar a mano el último `.dmp` de `/data/coolify/backups/` una vez por semana.
+- ⏸️ **Respaldo de las fotos de productos**, postergado. El respaldo de Coolify cubre solo la base, no el volumen `/app/uploads`. Propuesta: una tarea diaria en el VPS que comprima el volumen y guarde 14 copias junto a los respaldos de la base.
+- ⏸️ Bajar el límite de subida de fotos de 1,5 MB a 500 KB (el front ya las reduce a unos 30–60 KB).
 - ✅ La base no está expuesta a internet (puerto 5432 cerrado).
 - ✅ Disco: 50 % usado (19 GB libres).
 
 ## 2. Seguridad del servidor
 
-- ⚠️ **Panel de Coolify en `http://IP:8000`, sin HTTPS.** La contraseña del panel viaja sin cifrar.
-  1. Coolify → **Settings → Instance's Domain**: `https://coolify.116.203.244.65.sslip.io` (o un subdominio propio). Guardar y entrar por esa URL.
-  2. Activar **2FA** en el perfil de Coolify.
-  3. Después, cerrar los puertos 8000, 6001 y 6002 con el firewall (punto siguiente).
-- ⚠️ **Firewall inactivo.** En la consola de Hetzner: **Firewalls → Create** con solo los puertos 22, 80 y 443 entrantes (TCP), aplicado al servidor. Hacerlo después de mover Coolify a HTTPS.
+- ✅ **Panel de Coolify con HTTPS:** `https://coolify.116.203.244.65.sslip.io` (certificado de Let's Encrypt; HTTP redirige a HTTPS). Entrar siempre por esa URL, nunca por `http://IP:8000`.
+- ⚠️ **2FA en Coolify:** Profile → Two-factor Authentication. Todavía no está activado.
+- ⏸️ **Firewall de Hetzner** (solo 22, 80 y 443 entrantes), postergado. Los puertos 8000, 6001 y 6002 siguen abiertos; el riesgo baja con 2FA y entrando siempre por la URL con HTTPS.
 - ⚠️ **SSH acepta contraseña con root.** Ya entra con llave desde el notebook de desarrollo. Pasos:
   1. Agregar una segunda llave de respaldo (otro equipo) en `/root/.ssh/authorized_keys`.
   2. En `/etc/ssh/sshd_config.d/50-cloud-init.conf`, poner `PasswordAuthentication no` y ejecutar `systemctl reload ssh`.
