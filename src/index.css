@@ -599,3 +599,7 @@ h1, h2, h3 { margin: 0; }
 .cuenta-btn:hover { opacity: 1; background: rgba(255, 255, 255, 0.08); }
 .menu-cuenta { grid-column: 1 / -1; padding: 8px 4px 0; border-top: 1px solid var(--line); margin-top: 4px; }
 button.opcion-registro { font: inherit; text-align: left; width: 100%; }
+.cargando-app { min-height: 100vh; display: grid; place-items: center; color: var(--muted); font-weight: 500; }
+.selector-empresa { margin: -12px 4px 14px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.06); color: #f6ead6; font-size: 14px; }
+.selector-empresa option { color: var(--ink); }
+.form.anular { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }

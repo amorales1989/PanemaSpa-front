@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Modal from './Modal'
 import RegistroForm from './RegistroForm'
 import { TIPOS } from '../lib/tipos'
+import { useDatos } from '../context/DataContext'
 
 // Modal "¿Qué quieres registrar?" → formulario del tipo elegido.
 // Si recibe `tipoInicial`, salta directo al formulario.
@@ -10,6 +11,8 @@ export default function Registrar({ tipoInicial = null, onClose }) {
   // Las ventas se registran seguidas: al finalizar, el formulario se limpia
   // (se vuelve a montar) y el modal sigue abierto hasta tocar la ✕
   const [ventas, setVentas] = useState(0)
+  const { puede } = useDatos()
+  const permitidos = Object.entries(TIPOS).filter(([, t]) => puede(t.permisoCrear))
 
   if (tipo) {
     const esVenta = tipo === 'ingresos'
@@ -23,7 +26,7 @@ export default function Registrar({ tipoInicial = null, onClose }) {
   return (
     <Modal titulo="¿Qué quieres registrar?" onClose={onClose}>
       <div className="opciones-registro">
-        {Object.entries(TIPOS).map(([id, t]) => (
+        {permitidos.map(([id, t]) => (
           <button key={id} className="opcion-registro" onClick={() => setTipo(id)}>
             <div className="mov-icon" style={{ background: t.suave, color: t.color }}><t.Icono size={24} /></div>
             <div><strong>{t.nuevo}</strong><span>{t.ayuda}</span></div>

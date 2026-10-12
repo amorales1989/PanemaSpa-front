@@ -250,15 +250,16 @@ function Bloque({ b }) {
   }
 }
 
-export function Documento({ reporte }) {
+// `marca`: nombre de la empresa (cada negocio ve el suyo en sus informes)
+export function Documento({ reporte, marca }) {
   return (
-    <Document title={`${reporte.titulo} · Panema`} author="Panema" creator="Panema · Control del negocio">
+    <Document title={`${reporte.titulo} · ${marca}`} author={marca} creator={`${marca} · Control del negocio`}>
       {reporte.partes.map((bloques, i) => (
         <Page key={i} size="A4" style={s.pagina}>
           <View style={s.encabezado} fixed>
-            <View style={s.logo}><Text style={s.logoLetra}>P</Text></View>
+            <View style={s.logo}><Text style={s.logoLetra}>{marca.charAt(0).toUpperCase()}</Text></View>
             <View>
-              <Text style={s.marcaNombre}>Panema</Text>
+              <Text style={s.marcaNombre}>{marca}</Text>
               <Text style={s.marcaSub}>Control del negocio</Text>
             </View>
             <View style={s.encabezadoDer}>
@@ -279,7 +280,7 @@ export function Documento({ reporte }) {
           {bloques.map((b, j) => <Bloque key={j} b={b} />)}
 
           <View style={s.pie} fixed>
-            <Text>Panema · {reporte.titulo}</Text>
+            <Text>{marca} · {reporte.titulo}</Text>
             <Text render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
           </View>
         </Page>

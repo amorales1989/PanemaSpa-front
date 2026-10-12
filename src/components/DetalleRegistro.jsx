@@ -1,4 +1,5 @@
-import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { Ban } from 'lucide-react'
 import Modal from './Modal'
 import { useDatos } from '../context/DataContext'
 import { TIPOS } from '../lib/tipos'
@@ -7,9 +8,13 @@ import { fmtNum, resumenItems, subtotal } from '../lib/items'
 
 // Detalle de una venta / egreso / merma con sus líneas
 export default function DetalleRegistro({ tipo, registro, onClose }) {
-  const { eliminar, hoy } = useDatos()
+  const { anular, hoy, puede } = useDatos()
   const t = TIPOS[tipo]
   const r = registro
+  const [anulando, setAnulando] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
 
   const datos = [
     ['Fecha', `${etiquetaDia(r.fecha, hoy)}${r.hora ? ` · ${r.hora}` : ''}`],
@@ -18,17 +23,25 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
     !r.items && ['Detalle', r.descripcion],
     r.metodo && ['Medio de pago', r.metodo],
     r.motivo && ['Motivo', r.motivo],
+    r.usuario && ['Registró', r.usuario],
   ].filter(Boolean)
 
-  const borrar = () => {
-    if (confirm('¿Eliminar este registro?')) {
-      eliminar(tipo, r.id)
+  // Los registros no se borran: se anulan con un motivo (queda en el historial)
+  const confirmarAnulacion = async (e) => {
+    e.preventDefault()
+    if (!motivo.trim()) return setError('Escribe el motivo')
+    setEnviando(true)
+    try {
+      await anular(tipo, r.id, motivo.trim())
       onClose()
+    } catch (err) {
+      setError(err.message)
+      setEnviando(false)
     }
   }
 
   return (
-    <Modal titulo={tipo === 'ingresos' ? `Venta #${r.id}` : `${t.singular} #${r.id}`} onClose={onClose}>
+    <Modal titulo={`${t.singular} #${r.numero ?? ''}`} onClose={onClose}>
       <div className="detalle-datos">
         {datos.map(([k, v]) => <div key={k}><span>{k}</span><strong>{v}</strong></div>)}
       </div>
@@ -52,9 +65,24 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
       <div className="total-ticket" style={{ background: t.suave, marginTop: 16 }}>
         <span>Total</span><strong>{dinero(r.monto)}</strong>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-        <button className="btn btn-ghost" onClick={borrar}><Trash2 size={16} /> Eliminar</button>
-      </div>
+      {puede(t.permisoAnular) && (anulando ? (
+        <form className="form anular" onSubmit={confirmarAnulacion}>
+          <div className="campo">
+            <label htmlFor="motivo-anulacion">¿Por qué se anula?</label>
+            <input id="motivo-anulacion" className="input" autoFocus placeholder="Ej: se registró dos veces" maxLength={300}
+              value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          </div>
+          {error && <div className="alerta-error" role="alert">{error}</div>}
+          <div className="acciones-form">
+            <button type="button" className="btn btn-ghost" onClick={() => setAnulando(false)}>Cancelar</button>
+            <button className="btn btn-peligro" style={{ flex: 1 }} disabled={enviando}><Ban size={16} /> {enviando ? 'Anulando…' : 'Anular registro'}</button>
+          </div>
+        </form>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+          <button className="btn btn-ghost" onClick={() => setAnulando(true)}><Ban size={16} /> Anular</button>
+        </div>
+      ))}
     </Modal>
   )
 }

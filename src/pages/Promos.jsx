@@ -44,21 +44,25 @@ function PromoForm({ promo, onClose }) {
   // El código repetido se avisa apenas se escribe; el resto, al intentar guardar
   const ver = (campo) => (campo === 'codigo' && codigoUsado) || intentado ? falta[campo] : null
 
-  const guardar = (e) => {
+  const guardar = async (e) => {
     e.preventDefault()
     if (errores.length) {
       setIntentado(true)
       return
     }
-    guardarPromo({
-      id: promo?.id ?? `promo-${Date.now()}`,
-      codigo: parseInt(codigo) || siguienteCodigo,
-      nombre: nombre.trim(),
-      productos: items.map((i) => ({ id: i.id, cantidad: num(i.cantidad) })),
-      precio: precioNum,
-      activa,
-    })
-    onClose()
+    try {
+      await guardarPromo({
+        id: promo?.id ?? `promo-${Date.now()}`,
+        codigo: parseInt(codigo) || siguienteCodigo,
+        nombre: nombre.trim(),
+        productos: items.map((i) => ({ id: i.id, cantidad: num(i.cantidad) })),
+        precio: precioNum,
+        activa,
+      })
+      onClose()
+    } catch {
+      // guardarPromo ya avisó el error; el formulario queda abierto
+    }
   }
 
   return (
@@ -118,7 +122,8 @@ function PromoForm({ promo, onClose }) {
 }
 
 export default function Promos() {
-  const { promos, ingresos, guardarPromo, eliminarPromo, productos } = useDatos()
+  const { promos, ingresos, guardarPromo, eliminarPromo, productos, puede } = useDatos()
+  const gestiona = puede('promos.gestionar')
   const [editando, setEditando] = useState(null) // null | 'nueva' | promo
 
   const ventas = useMemo(() => {
@@ -141,7 +146,7 @@ export default function Promos() {
         </div>
         <div className="acciones-head">
           <BotonPDF tipo="promos" periodo="30d" />
-          <button className="btn btn-primary" onClick={() => setEditando('nueva')}><Plus size={18} /> Nueva promo</button>
+          {gestiona && <button className="btn btn-primary" onClick={() => setEditando('nueva')}><Plus size={18} /> Nueva promo</button>}
         </div>
       </div>
 
@@ -154,7 +159,7 @@ export default function Promos() {
               <div className="promo-top">
                 <span className="tile-codigo">#{p.codigo}</span>
                 <span className={`estado ${p.activa ? 'on' : ''}`}>{p.activa ? 'Activa' : 'Pausada'}</span>
-                <Interruptor activo={p.activa} onChange={(activa) => guardarPromo({ ...p, activa })} etiqueta={`Activar ${p.nombre}`} />
+                {gestiona && <Interruptor activo={p.activa} onChange={(activa) => guardarPromo({ ...p, activa }).catch(() => {})} etiqueta={`Activar ${p.nombre}`} />}
               </div>
               <h2 className="serif">{p.nombre}</h2>
               <ul className="promo-items">
@@ -172,16 +177,18 @@ export default function Promos() {
                 <Tag size={14} /> {v ? `${fmtNum(v.vendidas)} vendidas en 30 días · ${dinero(v.ingresos)}` : 'Sin ventas en 30 días'}
               </div>
               <div className="promo-acciones">
-                <button className="btn btn-ghost" onClick={() => setEditando(p)}><Pencil size={15} /> Editar</button>
-                <button className="btn btn-ghost" onClick={() => borrar(p)}><Trash2 size={15} /> Eliminar</button>
+                {gestiona && <button className="btn btn-ghost" onClick={() => setEditando(p)}><Pencil size={15} /> Editar</button>}
+                {gestiona && <button className="btn btn-ghost" onClick={() => borrar(p)}><Trash2 size={15} /> Eliminar</button>}
               </div>
             </div>
           )
         })}
-        <button className="card promo promo-nueva" onClick={() => setEditando('nueva')}>
-          <Plus size={28} />
-          <span>Crear promo</span>
-        </button>
+        {gestiona && (
+          <button className="card promo promo-nueva" onClick={() => setEditando('nueva')}>
+            <Plus size={28} />
+            <span>Crear promo</span>
+          </button>
+        )}
       </div>
 
       {editando && <PromoForm promo={editando === 'nueva' ? null : editando} onClose={() => setEditando(null)} />}

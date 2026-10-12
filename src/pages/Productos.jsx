@@ -20,10 +20,12 @@ function Delta({ valor, subirEsBueno = true }) {
 const cant = (n, unidad) => `${fmtNum(Math.round(n * 10) / 10)} ${unidad}`
 
 export default function Productos() {
-  const { ingresos, egresos, mermas, productos, insumos } = useDatos()
+  const { ingresos, egresos, mermas, productos, insumos, puede } = useDatos()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') === 'insumos' ? 'insumos' : 'productos'
+  const gestiona = puede(tab === 'insumos' ? 'insumos.gestionar' : 'productos.gestionar')
+  const ajustaPrecios = puede('precios.ajustar')
   const [periodo, setPeriodo] = useState('30d')
   const [busqueda, setBusqueda] = useState('')
   const [categoria, setCategoria] = useState('Todas')
@@ -100,9 +102,11 @@ export default function Productos() {
         <div className="acciones-head">
           <SelectorPeriodo valor={periodo} onChange={setPeriodo} />
           <BotonPDF tipo={tab} periodo={periodo} texto={tab === 'insumos' ? 'PDF de insumos' : 'PDF de productos'} />
-          <button className="btn btn-primary" onClick={() => setEditando('nuevo')}>
-            <Plus size={18} /> {tab === 'insumos' ? 'Nuevo insumo' : 'Nuevo producto'}
-          </button>
+          {gestiona && (
+            <button className="btn btn-primary" onClick={() => setEditando('nuevo')}>
+              <Plus size={18} /> {tab === 'insumos' ? 'Nuevo insumo' : 'Nuevo producto'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -131,9 +135,9 @@ export default function Productos() {
             <>
               <thead>
                 <tr>
-                  <th className="col-check" onClick={(e) => e.stopPropagation()}>
+                  {ajustaPrecios && <th className="col-check" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={todosMarcados} onChange={marcarTodos} aria-label="Seleccionar todos los productos visibles" />
-                  </th>
+                  </th>}
                   <th className="ocultar-movil">Código</th><th>Producto</th><th className="num ocultar-movil">Precio</th>
                   <th className="num ocultar-movil">Vendidos</th><th className="num">Ventas</th><th className="num ocultar-movil">Margen est.</th>
                   <th className="num ocultar-movil">Merma</th><th className="num ocultar-movil">vs anterior</th><th />
@@ -142,9 +146,9 @@ export default function Productos() {
               <tbody>
                 {visibles.map((p) => (
                   <tr key={p.id} className={seleccion.has(p.id) ? 'marcada' : ''} onClick={() => navigate(`/productos/producto/${p.id}`)}>
-                    <td className="col-check" onClick={(e) => { e.stopPropagation(); marcar(p.id) }}>
+                    {ajustaPrecios && <td className="col-check" onClick={(e) => { e.stopPropagation(); marcar(p.id) }}>
                       <input type="checkbox" checked={seleccion.has(p.id)} onChange={() => {}} aria-label={`Seleccionar ${p.nombre}`} />
-                    </td>
+                    </td>}
                     <td className="ocultar-movil"><span className="tile-codigo">#{p.codigo}</span></td>
                     <td>
                       <div className="celda-producto">
@@ -159,7 +163,7 @@ export default function Productos() {
                     <td className="num ocultar-movil" style={{ color: p.merma ? 'var(--merma)' : 'var(--muted)' }}>{p.merma ? dinero(p.merma) : '—'}</td>
                     <td className="num ocultar-movil"><Delta valor={p.tendencia} /></td>
                     <td className="num col-acciones">
-                      <button className="icon-btn" onClick={(e) => editar(e, p)} aria-label={`Editar ${p.nombre}`} title="Editar"><Pencil size={15} /></button>
+                      {gestiona && <button className="icon-btn" onClick={(e) => editar(e, p)} aria-label={`Editar ${p.nombre}`} title="Editar"><Pencil size={15} /></button>}
                       <ChevronRight size={16} color="var(--muted)" className="ocultar-movil" />
                     </td>
                   </tr>
@@ -185,7 +189,7 @@ export default function Productos() {
                     <td className="num ocultar-movil"><Delta valor={p.variacion} subirEsBueno={false} /></td>
                     <td className="num ocultar-movil" style={{ color: p.merma ? 'var(--merma)' : 'var(--muted)' }}>{p.merma ? dinero(p.merma) : '—'}</td>
                     <td className="num col-acciones">
-                      <button className="icon-btn" onClick={(e) => editar(e, p)} aria-label={`Editar ${p.nombre}`} title="Editar"><Pencil size={15} /></button>
+                      {gestiona && <button className="icon-btn" onClick={(e) => editar(e, p)} aria-label={`Editar ${p.nombre}`} title="Editar"><Pencil size={15} /></button>}
                       <ChevronRight size={16} color="var(--muted)" className="ocultar-movil" />
                     </td>
                   </tr>

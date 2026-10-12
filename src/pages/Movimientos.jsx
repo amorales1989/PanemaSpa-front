@@ -4,7 +4,7 @@ import { Plus, Search } from 'lucide-react'
 import { useDatos, rango, enRango, suma, PERIODOS } from '../context/DataContext'
 import BotonPDF from '../components/BotonPDF'
 import { SelectorPeriodo, ListaPorDia, Barras } from '../components/ui'
-import { TIPOS } from '../lib/tipos'
+import { TIPOS, categoriasDe } from '../lib/tipos'
 import { agrupar, agruparItemsPorCategoria, topItems } from '../lib/stats'
 import { dinero, porcentaje } from '../lib/format'
 import { fmtNum } from '../lib/items'
@@ -47,9 +47,11 @@ export default function Movimientos({ tipo }) {
         </div>
         <div className="acciones-head">
         <BotonPDF tipo={{ ingresos: 'ventas', egresos: 'egresos', mermas: 'merma' }[tipo]} periodo={periodo} />
-        <button className="btn btn-color" style={{ background: t.color }} onClick={() => abrirRegistro(tipo === 'ingresos' ? 'venta' : tipo)}>
-          <Plus size={18} /> {t.nuevo}
-        </button>
+        {datos.puede(t.permisoCrear) && (
+          <button className="btn btn-color" style={{ background: t.color }} onClick={() => abrirRegistro(tipo === 'ingresos' ? 'venta' : tipo)}>
+            <Plus size={18} /> {t.nuevo}
+          </button>
+        )}
         </div>
       </div>
 
@@ -72,7 +74,7 @@ export default function Movimientos({ tipo }) {
             </label>
           </div>
           <div className="chips" style={{ marginBottom: 16 }}>
-            {['Todas', ...t.categorias].map((c) => (
+            {['Todas', ...categoriasDe(tipo, datos.listas)].map((c) => (
               <button key={c} className={`chip ${categoria === c ? 'on' : ''}`} onClick={() => setCategoria(c)}>{c}</button>
             ))}
           </div>

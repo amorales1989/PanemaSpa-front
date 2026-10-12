@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { Wallet, TrendingUp, TrendingDown, PackageX, ChevronRight, AlertTriangle, ShoppingBag } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import { useDatos, rango, enRango, suma } from '../context/DataContext'
 import BotonPDF from '../components/BotonPDF'
 import { Kpi, SelectorPeriodo, Barras, ListaPorDia, TooltipDinero } from '../components/ui'
@@ -35,13 +36,16 @@ export default function Inicio() {
   const gastos = agrupar(d.actual.egresos, 'categoria').slice(0, 5)
   const top = topItems(d.actual.mermas, 3)
   const masVendidos = topItems(d.actual.ingresos, 6)
-  const saludo = hoy.getHours() < 12 ? 'Buenos días' : 'Hola'
+  const { usuario } = useAuth()
+  const [hora] = useState(() => new Date().getHours())
+  const saludo = hora < 12 ? 'Buenos días' : hora < 20 ? 'Buenas tardes' : 'Buenas noches'
+  const nombre = usuario?.nombre.split(' ')[0]
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1 className="serif">{saludo}, Panema</h1>
+          <h1 className="serif">{saludo}{nombre ? `, ${nombre}` : ''}</h1>
           <p>Así va tu negocio en los últimos {periodo === '7d' ? '7 días' : periodo === '30d' ? '30 días' : periodo === '90d' ? '3 meses' : '6 meses'}.</p>
         </div>
         <div className="acciones-head">

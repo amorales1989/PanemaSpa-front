@@ -1,12 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { api, renovarSesion, setToken } from '../lib/api'
+import { api, renovarSesion, setEmpresaActiva, setToken } from '../lib/api'
 
 const AuthContext = createContext(null)
 
 const SIN_SESION = { cargando: false, usuario: null, empresas: [] }
+const CLAVE_EMPRESA = 'panema-empresa'
+
+const leerEmpresaGuardada = () => {
+  try {
+    return localStorage.getItem(CLAVE_EMPRESA)
+  } catch {
+    return null
+  }
+}
 
 export function AuthProvider({ children }) {
   const [estado, setEstado] = useState({ ...SIN_SESION, cargando: true })
+  const [empresaId, setEmpresaId] = useState(leerEmpresaGuardada)
 
   const cargarPerfil = useCallback(async () => {
     const yo = await api('/auth/yo')
@@ -45,9 +55,24 @@ export function AuthProvider({ children }) {
     [],
   )
 
+  // Empresa activa: la elegida antes (si sigue disponible) o la primera
+  const empresa = estado.empresas.find((e) => e.id === empresaId) ?? estado.empresas[0] ?? null
+  setEmpresaActiva(empresa?.id ?? null)
+
+  const elegirEmpresa = useCallback((id) => {
+    setEmpresaId(id)
+    try {
+      localStorage.setItem(CLAVE_EMPRESA, id)
+    } catch {
+      // Sin almacenamiento: la elección dura esta sesión
+    }
+  }, [])
+
+  const puede = useCallback((...permisos) => permisos.some((p) => empresa?.permisos.includes(p)), [empresa])
+
   const value = useMemo(
-    () => ({ ...estado, iniciarSesion, cerrarSesion, cambiarPassword, recargarPerfil: cargarPerfil }),
-    [estado, iniciarSesion, cerrarSesion, cambiarPassword, cargarPerfil],
+    () => ({ ...estado, empresa, elegirEmpresa, puede, iniciarSesion, cerrarSesion, cambiarPassword, recargarPerfil: cargarPerfil }),
+    [estado, empresa, elegirEmpresa, puede, iniciarSesion, cerrarSesion, cambiarPassword, cargarPerfil],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

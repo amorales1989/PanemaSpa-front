@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { useDatos } from '../context/DataContext'
-import { TIPOS } from '../lib/tipos'
-import { METODOS_PAGO, MOTIVOS_MERMA, PROVEEDORES } from '../data/mock'
+import { TIPOS, categoriasDe } from '../lib/tipos'
 import { dinero, isoLocal } from '../lib/format'
 import { num, totalItems } from '../lib/items'
 import { Catalogo, Ticket, sumarAlTicket } from './Items'
@@ -23,24 +22,29 @@ const ahora = () => {
 }
 
 export default function RegistroForm({ tipo, onDone }) {
-  const { agregar, hoy, catalogo } = useDatos()
+  const { agregar, hoy, catalogo, listas, puede } = useDatos()
   const t = TIPOS[tipo]
+  const categorias = categoriasDe(tipo, listas)
+  const metodoInicial = tipo === 'egresos' ? 'Transferencia' : 'Efectivo'
 
   const [items, setItems] = useState([])
-  const [categoria, setCategoria] = useState(t.categorias[0])
-  const [metodo, setMetodo] = useState(tipo === 'egresos' ? 'Transferencia' : 'Efectivo')
+  const [categoria, setCategoria] = useState(categorias[0])
+  const [metodo, setMetodo] = useState(listas.metodosPago.includes(metodoInicial) ? metodoInicial : listas.metodosPago[0])
   const [fecha, setFecha] = useState(isoLocal(hoy))
   const [proveedor, setProveedor] = useState('')
-  const [motivo, setMotivo] = useState('Vencido')
+  const [motivo, setMotivo] = useState(listas.motivosMerma[0])
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState('')
   // Egresos sin ítems (sueldos, arriendo...)
   const [monto, setMonto] = useState('')
   const [descripcion, setDescripcion] = useState('')
 
-  const conItems = tipo !== 'egresos' || categoria === 'Insumos'
+  const conItems = tipo !== 'egresos' || listas.egresosConItems.includes(categoria)
   const total = conItems ? totalItems(items) : parseInt(monto) || 0
-  const valido = total > 0
+  // La merma la valoriza el servidor (quien no ve costos ve $0): basta con tener ítems
+  const valido = !guardando && (tipo === 'mermas' ? items.some((i) => num(i.cantidad) > 0) : total > 0)
 
-  const guardar = (e) => {
+  const guardar = async (e) => {
     e.preventDefault()
     if (!valido) return
     const lineas = items
@@ -53,11 +57,18 @@ export default function RegistroForm({ tipo, onDone }) {
         const factor = base ? i.precio / base : 0
         return { ...i, componentes: i.componentes.map((c) => ({ ...c, precio: Math.round(c.precio * factor) })) }
       })
-    if (tipo === 'ingresos') agregar('ingresos', { fecha, hora: ahora(), categoria, metodo, items: lineas, monto: total })
-    else if (tipo === 'mermas') agregar('mermas', { fecha, motivo, items: lineas, monto: total })
-    else if (conItems) agregar('egresos', { fecha, categoria, descripcion: proveedor.trim() || 'Compra de insumos', proveedor: proveedor.trim(), metodo, items: lineas, monto: total })
-    else agregar('egresos', { fecha, categoria, descripcion: descripcion.trim() || categoria, metodo, monto: total })
-    onDone()
+    setGuardando(true)
+    setError('')
+    try {
+      if (tipo === 'ingresos') await agregar('ingresos', { fecha, hora: ahora(), categoria, metodo, items: lineas, monto: total })
+      else if (tipo === 'mermas') await agregar('mermas', { fecha, motivo, items: lineas, monto: total })
+      else if (conItems) await agregar('egresos', { fecha, categoria, descripcion: proveedor.trim() || 'Compra de insumos', proveedor: proveedor.trim(), metodo, items: lineas, monto: total })
+      else await agregar('egresos', { fecha, categoria, descripcion: descripcion.trim() || categoria, metodo, monto: total })
+      onDone()
+    } catch (err) {
+      setError(err.message)
+      setGuardando(false)
+    }
   }
 
   const campoFecha = (
@@ -66,10 +77,11 @@ export default function RegistroForm({ tipo, onDone }) {
       <input id="fecha" type="date" className="input" value={fecha} max={isoLocal(hoy)} onChange={(e) => setFecha(e.target.value)} />
     </div>
   )
-  const textoGuardar = tipo === 'ingresos' ? 'Finalizar venta' : `Guardar ${t.singular.toLowerCase()}`
+  const textoGuardar = guardando ? 'Guardando…' : tipo === 'ingresos' ? 'Finalizar venta' : `Guardar ${t.singular.toLowerCase()}`
+  const avisoError = error && <div className="alerta-error" role="alert">{error}</div>
   const botonGuardar = (
     <button className="btn btn-color btn-guardar" style={{ background: t.color, opacity: valido ? 1 : 0.45 }} disabled={!valido}>
-      <Check size={18} /> {textoGuardar}{valido ? ` · ${dinero(total)}` : ''}
+      <Check size={18} /> {textoGuardar}{valido && total > 0 ? ` · ${dinero(total)}` : ''}
     </button>
   )
 
@@ -88,7 +100,7 @@ export default function RegistroForm({ tipo, onDone }) {
   return (
     <form className="form" onSubmit={guardar}>
       {tipo === 'egresos' && (
-        <div className="campo"><label>Categoría</label><Chips opciones={t.categorias} valor={categoria} onChange={setCategoria} /></div>
+        <div className="campo"><label>Categoría</label><Chips opciones={categorias} valor={categoria} onChange={setCategoria} /></div>
       )}
 
       {conItems ? (
@@ -101,7 +113,7 @@ export default function RegistroForm({ tipo, onDone }) {
               {items.length > 0 && <button type="button" className="link" style={{ border: 0, background: 'none', padding: 0 }} onClick={() => setItems([])}>Vaciar</button>}
             </div>
             <Ticket
-              items={items} onChange={setItems} precioEditable={tipo !== 'mermas'}
+              items={items} onChange={setItems} precioEditable={tipo === 'egresos' || (tipo === 'ingresos' && puede('ventas.modificar_precio'))}
               etiquetaPrecio={tipo === 'mermas' ? 'costo c/u' : 'c/u'}
               vacio={tipo === 'ingresos' ? 'Toca un producto o escribe su código para agregarlo' : 'Agrega lo que corresponda tocando o escribiendo el código'}
             />
@@ -112,8 +124,8 @@ export default function RegistroForm({ tipo, onDone }) {
 
             {tipo === 'ingresos' && (
               <>
-                <div className="campo"><label>Canal</label><Chips opciones={t.categorias} valor={categoria} onChange={setCategoria} /></div>
-                <div className="campo"><label>Medio de pago</label><Chips opciones={METODOS_PAGO} valor={metodo} onChange={setMetodo} /></div>
+                <div className="campo"><label>Canal</label><Chips opciones={categorias} valor={categoria} onChange={setCategoria} /></div>
+                <div className="campo"><label>Medio de pago</label><Chips opciones={listas.metodosPago} valor={metodo} onChange={setMetodo} /></div>
               </>
             )}
             {tipo === 'egresos' && (
@@ -121,15 +133,16 @@ export default function RegistroForm({ tipo, onDone }) {
                 <div className="campo">
                   <label htmlFor="proveedor">Proveedor</label>
                   <input id="proveedor" className="input" list="proveedores" placeholder="Ej: Molinera del Sur" value={proveedor} onChange={(e) => setProveedor(e.target.value)} />
-                  <datalist id="proveedores">{PROVEEDORES.map((p) => <option key={p} value={p} />)}</datalist>
+                  <datalist id="proveedores">{listas.proveedores.map((p) => <option key={p} value={p} />)}</datalist>
                 </div>
-                <div className="campo"><label>Medio de pago</label><Chips opciones={METODOS_PAGO} valor={metodo} onChange={setMetodo} /></div>
+                <div className="campo"><label>Medio de pago</label><Chips opciones={listas.metodosPago} valor={metodo} onChange={setMetodo} /></div>
               </>
             )}
             {tipo === 'mermas' && (
-              <div className="campo"><label>Motivo</label><Chips opciones={MOTIVOS_MERMA} valor={motivo} onChange={setMotivo} /></div>
+              <div className="campo"><label>Motivo</label><Chips opciones={listas.motivosMerma} valor={motivo} onChange={setMotivo} /></div>
             )}
             {campoFecha}
+            {avisoError}
             {botonGuardar}
           </div>
         </div>
@@ -148,8 +161,9 @@ export default function RegistroForm({ tipo, onDone }) {
             <label htmlFor="desc">Detalle <span style={{ fontWeight: 400 }}>(opcional)</span></label>
             <input id="desc" className="input" placeholder="Ej: Sueldo vendedora" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
           </div>
-          <div className="campo"><label>Medio de pago</label><Chips opciones={METODOS_PAGO} valor={metodo} onChange={setMetodo} /></div>
+          <div className="campo"><label>Medio de pago</label><Chips opciones={listas.metodosPago} valor={metodo} onChange={setMetodo} /></div>
           {campoFecha}
+          {avisoError}
           {botonGuardar}
         </>
       )}

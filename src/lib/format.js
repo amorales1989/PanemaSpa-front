@@ -1,6 +1,6 @@
 const clp = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
-export const dinero = (n) => clp.format(Math.round(n))
+export const dinero = (n) => (n < 0 ? `-${clp.format(Math.round(-n))}` : clp.format(Math.round(n)))
 
 // Versión corta para ejes de gráficos: $1,2M · $350k
 export const dineroCorto = (n) => {

@@ -31,12 +31,16 @@ export default function AjustePrecios({ productos, onClose, onAplicado }) {
   const cambian = filas.filter((f) => f.nuevo !== f.precio && !f.invalido)
   const listo = v > 0 && !hayInvalidos && cambian.length > 0
 
-  const aplicar = () => {
+  const aplicar = async () => {
     if (!listo) return
     const motivo = `${sentido === 'subir' ? 'Aumento' : 'Rebaja'} ${modo === 'porcentaje' ? `${String(v).replace('.', ',')}%` : dinero(v)}`
-    ajustarPrecios(cambian.map((f) => ({ id: f.id, precio: f.nuevo })), motivo)
-    onAplicado?.()
-    onClose()
+    try {
+      await ajustarPrecios(cambian.map((f) => ({ id: f.id, precio: f.nuevo })), motivo)
+      onAplicado?.()
+      onClose()
+    } catch {
+      // ajustarPrecios ya avisó el error; el modal queda abierto para reintentar
+    }
   }
 
   const uno = productos.length === 1

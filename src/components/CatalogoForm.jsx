@@ -35,7 +35,7 @@ const conPuntos = (v) => (v ? Number(v).toLocaleString('es-CL') : '')
 
 // Crear o editar un producto (tipo="producto") o un insumo (tipo="insumo")
 export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
-  const { productos, insumos, promos, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, setImagen } = useDatos()
+  const { productos, insumos, promos, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, setImagen, listas } = useDatos()
   const esProducto = tipo === 'producto'
   const lista = esProducto ? productos : insumos
   const nuevo = !item
@@ -43,7 +43,9 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
   // El id se crea al abrir, así la foto de un producto nuevo ya queda asociada
   const [id] = useState(() => item?.id ?? `${tipo}-${Date.now()}`)
   const siguienteCodigo = Math.max(esProducto ? 100 : 500, ...lista.map((p) => p.codigo)) + 1
-  const categorias = [...new Set(lista.map((p) => p.categoria))]
+  // Las de la empresa + las que ya usan los ítems (por si alguna se desactivó)
+  const categorias = [...new Set([...(esProducto ? listas.categoriasProducto : listas.categoriasInsumo), ...lista.map((p) => p.categoria)])]
+    .filter((c) => c && c !== 'Sin categoría')
 
   const [nombre, setNombre] = useState(item?.nombre ?? '')
   const [codigo, setCodigo] = useState(String(item?.codigo ?? siguienteCodigo))
@@ -54,6 +56,8 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
   const [precio, setPrecio] = useState(item ? String(item.precio) : '')
   const [costo, setCosto] = useState(item?.costo ? String(item.costo) : '')
   const [intentado, setIntentado] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+  const [errorServidor, setErrorServidor] = useState('')
 
   const categoriaFinal = creandoCategoria ? nuevaCategoria.trim() : categoria
   const precioNum = parseInt(precio) || 0
@@ -77,29 +81,40 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
     onClose()
   }
 
-  const guardar = (e) => {
+  const guardar = async (e) => {
     e.preventDefault()
     if (errores.length) {
       setIntentado(true)
       return
     }
     const datos = { ...item, id, codigo: parseInt(codigo), nombre: nombre.trim(), categoria: categoriaFinal, unidad, precio: precioNum }
-    if (esProducto) guardarProducto({ ...datos, costo: costoNum })
-    else guardarInsumo(datos)
-    onClose()
+    setGuardando(true)
+    setErrorServidor('')
+    try {
+      if (esProducto) await guardarProducto({ ...datos, costo: costoNum })
+      else await guardarInsumo(datos)
+      onClose()
+    } catch (err) {
+      setErrorServidor(err.message)
+      setGuardando(false)
+    }
   }
 
-  const borrar = () => {
+  const borrar = async () => {
     const enPromo = esProducto && promos.find((p) => p.productos.some((c) => c.id === id))
     if (enPromo) {
       alert(`No se puede eliminar: "${item.nombre}" está en la promo "${enPromo.nombre}". Quítalo de la promo primero.`)
       return
     }
     if (!confirm(`¿Eliminar "${item.nombre}" del catálogo?\n\nLas ventas, compras y mermas ya registradas no se borran.`)) return
-    if (esProducto) eliminarProducto(id)
-    else eliminarInsumo(id)
-    onClose()
-    onEliminado?.()
+    try {
+      if (esProducto) await eliminarProducto(id)
+      else await eliminarInsumo(id)
+      onClose()
+      onEliminado?.()
+    } catch (err) {
+      setErrorServidor(err.message)
+    }
   }
 
   const margen = precioNum - costoNum
@@ -160,9 +175,11 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
           </div>
         )}
 
+        {errorServidor && <div className="alerta-error" role="alert">{errorServidor}</div>}
+
         <div className="acciones-form">
           {!nuevo && <button type="button" className="btn btn-peligro" onClick={borrar}><Trash2 size={16} /> Eliminar</button>}
-          <button className="btn btn-primary btn-guardar" style={{ flex: 1 }}>{nuevo ? `Crear ${esProducto ? 'producto' : 'insumo'}` : 'Guardar cambios'}</button>
+          <button className="btn btn-primary btn-guardar" style={{ flex: 1 }} disabled={guardando}>{guardando ? 'Guardando…' : nuevo ? `Crear ${esProducto ? 'producto' : 'insumo'}` : 'Guardar cambios'}</button>
         </div>
       </form>
     </Modal>

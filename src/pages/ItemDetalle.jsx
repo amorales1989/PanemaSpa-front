@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, Navigate } from 'react-router-dom'
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { ArrowLeft, ShoppingBag, Wallet, PiggyBank, PackageX, Truck, Tag, Pencil, Percent, History } from 'lucide-react'
 import CatalogoForm from '../components/CatalogoForm'
+import ImagenProducto from '../components/ImagenProducto'
 import AjustePrecios from '../components/AjustePrecios'
 import { useDatos, rango, enRango } from '../context/DataContext'
 import FotoProducto from '../components/FotoProducto'
@@ -21,11 +22,17 @@ function TooltipCantidad({ active, payload, unidad }) {
 
 export default function ItemDetalle() {
   const { tipo, id } = useParams()
-  const { ingresos, egresos, mermas, hoy, productos, insumos } = useDatos()
+  const { ingresos, egresos, mermas, hoy, productos, insumos, historialPrecios, puede } = useDatos()
   const [periodo, setPeriodo] = useState('90d')
   const [editando, setEditando] = useState(false)
   const [ajustando, setAjustando] = useState(false)
   const ref = (tipo === 'producto' ? productos : insumos).find((p) => p.id === id)
+  // El historial de precios se pide al servidor (se recarga si cambia el precio)
+  const [historial, setHistorial] = useState([])
+  useEffect(() => {
+    if (tipo !== 'producto' || !ref) return
+    historialPrecios(id).then(setHistorial).catch(() => setHistorial([]))
+  }, [tipo, id, ref?.precio, historialPrecios]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const d = useMemo(() => {
     if (!ref) return null
@@ -65,7 +72,7 @@ export default function ItemDetalle() {
       <Link to={esProducto ? '/productos' : '/productos?tab=insumos'} className="link" style={{ marginBottom: 12 }}><ArrowLeft size={16} /> {esProducto ? 'Productos' : 'Insumos'}</Link>
       <div className="page-head">
         <div className="cabecera-producto">
-          {esProducto && <FotoProducto producto={ref} />}
+          {esProducto && (puede('productos.gestionar') ? <FotoProducto producto={ref} /> : <ImagenProducto producto={{ ...ref, tipo: 'producto' }} tamano={88} />)}
           <div>
           <h1 className="serif">{ref.nombre}</h1>
           <p>
@@ -76,8 +83,8 @@ export default function ItemDetalle() {
         </div>
         <div className="acciones-head">
           <SelectorPeriodo valor={periodo} onChange={setPeriodo} />
-          <button className="btn btn-pdf" onClick={() => setEditando(true)}><Pencil size={16} /> Editar</button>
-          {esProducto && <button className="btn btn-primary" onClick={() => setAjustando(true)}><Percent size={16} /> Ajustar precio</button>}
+          {puede(esProducto ? 'productos.gestionar' : 'insumos.gestionar') && <button className="btn btn-pdf" onClick={() => setEditando(true)}><Pencil size={16} /> Editar</button>}
+          {esProducto && puede('precios.ajustar') && <button className="btn btn-primary" onClick={() => setAjustando(true)}><Percent size={16} /> Ajustar precio</button>}
         </div>
       </div>
 
@@ -132,10 +139,10 @@ export default function ItemDetalle() {
           {esProducto && (
             <div className="card">
               <div className="card-head"><h2>Historial de precios</h2><History size={18} color="var(--muted)" /></div>
-              {ref.historial?.length ? (
+              {historial.length ? (
                 <table className="tabla">
                   <tbody>
-                    {ref.historial.slice(0, 6).map((h, i) => (
+                    {historial.slice(0, 6).map((h, i) => (
                       <tr key={i}>
                         <td>{etiquetaDia(h.fecha, hoy)}<div className="sub">{h.motivo}</div></td>
                         <td className="num"><span className="sub">{dinero(h.anterior)} → </span><b>{dinero(h.nuevo)}</b></td>
