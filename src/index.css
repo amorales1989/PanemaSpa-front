@@ -615,3 +615,12 @@ button.opcion-registro { font: inherit; text-align: left; width: 100%; }
 .lista-editar .input, .lista-agregar .input { flex: 1; min-width: 0; width: auto; }
 .lista-editable .alerta-error { margin-bottom: 10px; }
 .switch:disabled { opacity: 0.6; }
+.zona-archivo { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 16px; border: 2px dashed var(--line); border-radius: 14px; background: var(--surface-2); color: var(--ink); text-align: center; }
+.zona-archivo:hover { border-color: var(--brand); }
+.zona-archivo strong { word-break: break-all; }
+.importar-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.importar-resumen > div { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.importar-resumen > div > span:first-child { font-size: 13px; color: var(--muted); }
+.importar-resumen strong { font-size: 18px; }
+.importar-ok { display: flex; align-items: center; gap: 8px; color: var(--ingreso); font-weight: 600; }
+.segmented { max-width: 100%; overflow-x: auto; }

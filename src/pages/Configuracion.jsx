@@ -5,10 +5,12 @@ import { useDatos } from '../context/DataContext'
 import { api } from '../lib/api'
 import Equipo from '../components/Equipo'
 import ListaEditable from '../components/config/ListaEditable'
+import Importar from '../components/config/Importar'
 
 const PESTANAS = [
   { id: 'equipo', label: 'Equipo', permisos: ['usuarios.gestionar'] },
   { id: 'listas', label: 'Listas', permisos: ['configuracion.gestionar', 'sucursales.gestionar'] },
+  { id: 'importar', label: 'Importar catálogo', permisos: ['productos.gestionar', 'insumos.gestionar', 'promos.gestionar'] },
   { id: 'empresa', label: 'Empresa', permisos: ['configuracion.gestionar'] },
 ]
 
@@ -98,7 +100,7 @@ export default function Configuracion() {
       <div className="page-head">
         <div>
           <h1 className="serif">Configuración</h1>
-          <p>Equipo, listas y datos de {empresa.nombre}</p>
+          <p>Equipo, listas, catálogo y datos de {empresa.nombre}</p>
         </div>
       </div>
       {pestanas.length > 1 && (
@@ -112,6 +114,7 @@ export default function Configuracion() {
         <Equipo base="/equipo" yoId={usuario.id} puedeDuenos={empresa.rolCodigo === 'dueno'} />
       )}
       {actual === 'listas' && <Listas />}
+      {actual === 'importar' && <Importar />}
       {actual === 'empresa' && <DatosEmpresa />}
     </>
   )
