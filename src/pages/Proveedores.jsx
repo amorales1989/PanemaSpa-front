@@ -8,8 +8,16 @@ import { useDatos } from '../context/DataContext'
 import Modal from '../components/Modal'
 
 const TIPOS_CUENTA = { corriente: 'Cuenta corriente', vista: 'Cuenta vista', rut: 'CuentaRUT', ahorro: 'Cuenta de ahorro' }
-const BANCOS = ['Banco de Chile', 'BancoEstado', 'Santander', 'BCI', 'Scotiabank', 'Itaú', 'BICE', 'Security', 'Banco Falabella',
-  'Banco Ripley', 'Consorcio', 'Banco Internacional', 'Coopeuch', 'Tenpo', 'Mercado Pago', 'MACH', 'Prepago Los Héroes']
+// Sugerencias del campo Banco (se puede escribir cualquier otro)
+const BANCOS = [
+  // Bancos
+  'Banco de Chile', 'BancoEstado', 'Santander', 'BCI', 'Scotiabank', 'Itaú', 'BICE', 'Security', 'Banco Falabella',
+  'Banco Ripley', 'Consorcio', 'Banco Internacional', 'BTG Pactual', 'HSBC',
+  // Cooperativas y cajas
+  'Coopeuch', 'Oriencoop', 'Ahorrocoop', 'Detacoop', 'Tapp (Caja Los Andes)',
+  // Cuentas digitales y prepago
+  'Mercado Pago', 'MACH', 'Tenpo', 'Superdigital', 'Copec Pay', 'Global66', 'Prex', 'Prepago Los Héroes',
+]
 
 // Texto listo para pegar en la app del banco
 const datosTransferencia = (c) => [
@@ -152,7 +160,7 @@ const CAMPOS_PROVEEDOR = [
   { id: 'activo', label: 'Activo', tipo: 'interruptor' },
 ]
 const CAMPOS_CUENTA = [
-  { id: 'banco', label: 'Banco', requerido: true, lista: 'bancos', placeholder: 'Elige o escribe' },
+  { id: 'banco', label: 'Banco', requerido: true, lista: 'bancos', placeholder: 'Elige de la lista o escribe otro' },
   { id: 'tipoCuenta', label: 'Tipo de cuenta', requerido: true, tipo: 'chips', opciones: TIPOS_CUENTA },
   { id: 'numero', label: 'Número de cuenta', requerido: true, inputMode: 'numeric' },
   { id: 'titular', label: 'Titular', requerido: true, placeholder: 'Nombre o razón social' },
