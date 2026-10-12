@@ -81,20 +81,37 @@ export default function Productos() {
     setEditando((tab === 'productos' ? productos : insumos).find((x) => x.id === p.id))
   }
 
-  const resumen = tab === 'productos'
-    ? [
-        ['Ventas', dinero(filas.reduce((t, p) => t + p.ventas, 0))],
-        // Sin costo cargado no hay margen que calcular
-        ['Margen estimado', filas.some((p) => p.costo > 0) ? dinero(filas.filter((p) => p.costo > 0).reduce((t, p) => t + p.margen, 0)) : 'Falta el costo'],
-        ['Producto estrella', filas[0]?.nombre],
-        ['Merma de productos', dinero(filas.reduce((t, p) => t + p.merma, 0))],
+  // Resumen del período: [título, valor, nota que le da contexto]
+  const pct = (parte, total) => (total ? `${Math.round((parte / total) * 100)} %` : '—')
+  const resumen = (() => {
+    if (tab === 'productos') {
+      const ventas = filas.reduce((t, p) => t + p.ventas, 0)
+      const conCosto = filas.filter((p) => p.costo > 0)
+      const ventasConCosto = conCosto.reduce((t, p) => t + p.ventas, 0)
+      const margen = conCosto.reduce((t, p) => t + p.margen, 0)
+      const merma = filas.reduce((t, p) => t + p.merma, 0)
+      const estrella = filas.find((p) => p.ventas > 0)
+      const conVenta = filas.filter((p) => p.ventas > 0).length
+      return [
+        ['Ventas', dinero(ventas), `${conVenta} de ${filas.length} productos con ventas`],
+        ventasConCosto
+          ? ['Margen estimado', dinero(margen), `${pct(margen, ventasConCosto)} de las ventas${conCosto.length < filas.length ? ' con costo cargado' : ''}`]
+          : ['Margen estimado', '—', conCosto.length && ventas ? 'Lo vendido no tiene costo cargado' : ventas ? 'Falta cargar los costos' : 'Sin ventas en el período'],
+        ['Producto estrella', estrella?.nombre ?? '—', estrella ? `${dinero(estrella.ventas)} · ${pct(estrella.ventas, ventas)} de las ventas` : 'Sin ventas en el período'],
+        ['Merma', dinero(merma), ventas ? `${pct(merma, ventas)} sobre las ventas` : 'Sin ventas en el período'],
       ]
-    : [
-        ['Gasto en insumos', dinero(filas.reduce((t, p) => t + p.gasto, 0))],
-        ['Mayor gasto', filas[0]?.nombre],
-        ['Más subió de precio', [...filas].sort((a, b) => b.variacion - a.variacion)[0]?.nombre],
-        ['Merma de insumos', dinero(filas.reduce((t, p) => t + p.merma, 0))],
-      ]
+    }
+    const gasto = filas.reduce((t, p) => t + p.gasto, 0)
+    const merma = filas.reduce((t, p) => t + p.merma, 0)
+    const mayor = filas.find((p) => p.gasto > 0)
+    const alza = [...filas].filter((p) => p.variacion >= 0.5).sort((a, b) => b.variacion - a.variacion)[0]
+    return [
+      ['Gasto en insumos', dinero(gasto), `${filas.filter((p) => p.gasto > 0).length} de ${filas.length} insumos comprados`],
+      ['Mayor gasto', mayor?.nombre ?? '—', mayor ? `${dinero(mayor.gasto)} · ${pct(mayor.gasto, gasto)} del gasto` : 'Sin compras en el período'],
+      ['Más subió de precio', alza?.nombre ?? '—', alza ? `+${Math.round(alza.variacion)} % en el período` : 'Sin alzas de precio'],
+      ['Merma de insumos', dinero(merma), gasto ? `${pct(merma, gasto)} sobre lo comprado` : '—'],
+    ]
+  })()
 
   return (
     <>
@@ -104,8 +121,7 @@ export default function Productos() {
           <p>Seguimiento de cada producto e insumo. Toca uno para ver su detalle o agregarle una foto.</p>
         </div>
         <div className="acciones-head">
-          <SelectorPeriodo valor={periodo} onChange={setPeriodo} />
-          <BotonPDF tipo={tab} periodo={periodo} texto={tab === 'insumos' ? 'PDF de insumos' : 'PDF de productos'} />
+          <BotonPDF tipo={tab} periodo={periodo} texto={<>PDF<span className="ocultar-movil"> de {tab}</span></>} />
           {gestiona && (
             <button className="btn btn-primary" onClick={() => setEditando('nuevo')}>
               <Plus size={18} /> {tab === 'insumos' ? 'Nuevo insumo' : 'Nuevo producto'}
@@ -129,8 +145,20 @@ export default function Productos() {
         {categorias.map((c) => <button key={c} className={`chip ${categoria === c ? 'on' : ''}`} onClick={() => setCategoria(c)}>{c}</button>)}
       </div>
 
-      <div className="card resumen-filtro">
-        {resumen.map(([k, v]) => <div key={k}><span>{k}</span><strong>{v}</strong></div>)}
+      <div className="card resumen-productos">
+        <div className="resumen-productos-head">
+          <h2>Resumen</h2>
+          <SelectorPeriodo valor={periodo} onChange={setPeriodo} />
+        </div>
+        <div className="resumen-productos-datos">
+          {resumen.map(([titulo, valor, nota]) => (
+            <div key={titulo}>
+              <span>{titulo}</span>
+              <strong title={valor}>{valor}</strong>
+              <small>{nota}</small>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card" style={{ padding: '12px 12px 4px', overflowX: 'auto' }}>

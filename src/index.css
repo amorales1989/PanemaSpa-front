@@ -674,3 +674,19 @@ textarea.input { resize: vertical; font: inherit; }
   .nav-link { padding: 6px 12px; }
   .logo { padding-bottom: 8px; }
 }
+
+/* ---------- Resumen de productos / insumos ---------- */
+.resumen-productos { padding: 16px 20px; margin-bottom: 16px; }
+.resumen-productos-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.resumen-productos-head h2 { font-size: 16px; font-weight: 600; }
+.resumen-productos-datos { display: grid; grid-template-columns: repeat(4, 1fr); }
+.resumen-productos-datos > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0 16px; border-left: 1px solid var(--line); }
+.resumen-productos-datos > div:first-child { padding-left: 0; border-left: 0; }
+.resumen-productos-datos span { font-size: 13px; color: var(--muted); }
+.resumen-productos-datos strong { font-size: 22px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.resumen-productos-datos small { font-size: 12.5px; color: var(--muted); }
+@media (max-width: 860px) {
+  .resumen-productos-datos { grid-template-columns: 1fr 1fr; gap: 14px 0; }
+  .resumen-productos-datos > div:nth-child(3) { padding-left: 0; border-left: 0; }
+  .resumen-productos-head .segmented { width: 100%; }
+}
