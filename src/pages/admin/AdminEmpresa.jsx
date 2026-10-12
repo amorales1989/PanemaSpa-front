@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Ban, CalendarPlus, Check, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Ban, CalendarPlus, Check, RotateCcw, Star } from 'lucide-react'
 import { api } from '../../lib/api'
 import { dinero } from '../../lib/format'
 import Modal from '../../components/Modal'
@@ -24,6 +24,7 @@ function Suscripcion({ empresa, planes, onGuardar }) {
     estado: empresa.suscripcion ?? 'activa',
     pruebaHasta: empresa.pruebaHasta ?? '',
     periodoFin: empresa.periodoFin ?? '',
+    indefinida: empresa.suscripcion === 'activa' && !empresa.periodoFin,
   }))
   const set = (campo) => (e) => setForm((f) => ({ ...f, [campo]: e.target.value }))
   const [guardando, setGuardando] = useState(false)
@@ -47,9 +48,11 @@ function Suscripcion({ empresa, planes, onGuardar }) {
     <div className="card">
       <div className="card-head">
         <h2>Suscripción</h2>
-        <button className="btn btn-registrar btn-sm" onClick={extenderPrueba} disabled={guardando}>
-          <CalendarPlus size={16} /> +14 días de prueba
-        </button>
+        {!empresa.fundadora && (
+          <button className="btn btn-registrar btn-sm" onClick={extenderPrueba} disabled={guardando}>
+            <CalendarPlus size={16} /> +14 días de prueba
+          </button>
+        )}
       </div>
       <form className="form" onSubmit={(e) => {
         e.preventDefault()
@@ -57,7 +60,8 @@ function Suscripcion({ empresa, planes, onGuardar }) {
           planCodigo: form.planCodigo,
           estado: form.estado,
           pruebaHasta: form.pruebaHasta || null,
-          ...(form.periodoFin && { periodoFin: form.periodoFin }),
+          // Indefinida: sin fecha de fin (nunca vence ni se cobra)
+          ...(form.indefinida ? { periodoFin: null } : form.periodoFin && { periodoFin: form.periodoFin }),
         })
       }}>
         <div className="grid grid-2-eq">
@@ -65,7 +69,9 @@ function Suscripcion({ empresa, planes, onGuardar }) {
             <label htmlFor="plan">Plan</label>
             <select id="plan" className="input" value={form.planCodigo} onChange={set('planCodigo')}>
               {planes.map((p) => (
-                <option key={p.codigo} value={p.codigo}>{p.nombre} · {dinero(p.precioMensual)}/mes</option>
+                <option key={p.codigo} value={p.codigo}>
+                  {p.nombre} · {p.precioMensual ? `${dinero(p.precioMensual)}/mes` : 'sin costo'}{p.publico ? '' : ' (interno)'}
+                </option>
               ))}
             </select>
           </div>
@@ -81,9 +87,17 @@ function Suscripcion({ empresa, planes, onGuardar }) {
           </div>
           <div className="campo">
             <label htmlFor="periodo-fin">Período pagado hasta</label>
-            <input id="periodo-fin" type="date" className="input" value={form.periodoFin} onChange={set('periodoFin')} />
+            <input id="periodo-fin" type="date" className="input" value={form.indefinida ? '' : form.periodoFin}
+              onChange={set('periodoFin')} disabled={form.indefinida} />
           </div>
         </div>
+        <label className="fila-switch">
+          <button type="button" className={`switch ${form.indefinida ? 'on' : ''}`} role="switch" aria-checked={form.indefinida}
+            onClick={() => setForm((f) => ({ ...f, indefinida: !f.indefinida, ...(!f.indefinida && { estado: 'activa', pruebaHasta: '' }) }))}>
+            <span />
+          </button>
+          Contrato indefinido (sin vencimiento)
+        </label>
         <button className="btn btn-primary" disabled={guardando}><Check size={18} /> {guardando ? 'Guardando…' : 'Guardar suscripción'}</button>
       </form>
     </div>
@@ -141,7 +155,7 @@ export default function AdminEmpresa() {
       <Link to="/admin" className="link volver"><ArrowLeft size={16} /> Empresas</Link>
       <div className="page-head">
         <div>
-          <h1 className="serif">{empresa.nombre}</h1>
+          <h1 className="serif">{empresa.nombre} {empresa.fundadora && <span className="badge fundadora"><Star size={12} /> Fundadora</span>}</h1>
           <p>/{empresa.slug} · desde {fecha(empresa.createdAt)} · <span className={`badge ${est?.clase ?? ''}`}>{est?.texto}</span></p>
         </div>
         {suspendida ? (
@@ -201,7 +215,7 @@ export default function AdminEmpresa() {
                 <tr key={s.id}>
                   <td>{s.plan}</td>
                   <td><span className={`badge ${ESTADO_SUSCRIPCION[s.estado]?.clase ?? ''}`}>{ESTADO_SUSCRIPCION[s.estado]?.texto ?? s.estado}</span></td>
-                  <td className="sub">{fecha(s.periodoInicio)} → {fecha(s.estado === 'prueba' ? s.pruebaHasta : s.periodoFin)}</td>
+                  <td className="sub">{fecha(s.periodoInicio)} → {s.estado === 'prueba' ? fecha(s.pruebaHasta) : s.periodoFin ? fecha(s.periodoFin) : 'indefinido'}</td>
                 </tr>
               ))}
             </tbody>
@@ -213,6 +227,7 @@ export default function AdminEmpresa() {
         <Modal titulo="¿Suspender empresa?" onClose={() => setConfirmando(false)}>
           <div className="form">
             <p>Los usuarios de <strong>{empresa.nombre}</strong> dejarán de poder usar la app de inmediato. Los datos no se borran y puedes reactivarla cuando quieras.</p>
+            {empresa.fundadora && <div className="alerta">Es la empresa fundadora, con contrato indefinido. Suspéndela solo si ellos lo pidieron.</div>}
             <button className="btn btn-peligro" onClick={() => cambiarEstado('suspendida')}><Ban size={18} /> Suspender</button>
             <button className="btn btn-ghost" onClick={() => setConfirmando(false)}>Cancelar</button>
           </div>

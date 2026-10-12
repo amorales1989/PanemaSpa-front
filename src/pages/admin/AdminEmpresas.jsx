@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, CircleAlert, Clock, Search, ShoppingBag, Users } from 'lucide-react'
+import { Building2, CircleAlert, Clock, Search, ShoppingBag, Star, Users } from 'lucide-react'
 import { api } from '../../lib/api'
 import { dinero } from '../../lib/format'
 import { Kpi } from '../../components/ui'
@@ -15,8 +15,8 @@ const entero = (n) => Number(n ?? 0).toLocaleString('es-CL')
 
 function Vencimiento({ empresa }) {
   const fin = empresa.suscripcion === 'prueba' ? empresa.pruebaHasta : empresa.periodoFin
+  if (!fin) return empresa.suscripcion === 'activa' ? <div className="sub">Sin vencimiento</div> : null
   const dias = diasHasta(fin)
-  if (dias === null) return null
   const texto = dias < 0 ? `venció hace ${-dias} d` : dias === 0 ? 'vence hoy' : `vence en ${dias} d`
   return <div className={`sub ${dias <= 3 ? 'texto-alerta' : ''}`}>{texto}</div>
 }
@@ -103,7 +103,7 @@ export default function AdminEmpresas() {
                   return (
                     <tr key={e.id} onClick={() => navigate(`/admin/empresas/${e.id}`)}>
                       <td>
-                        <strong>{e.nombre}</strong>
+                        <strong>{e.nombre}</strong> {e.fundadora && <span className="badge fundadora"><Star size={11} /> Fundadora</span>}
                         <div className="sub">{e.duenoEmail ?? 'Sin dueño'} · desde {fecha(e.createdAt)}</div>
                       </td>
                       <td>

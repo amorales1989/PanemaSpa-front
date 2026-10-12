@@ -557,7 +557,7 @@ h1, h2, h3 { margin: 0; }
 .btn.btn-sm { padding: 8px 12px; font-size: 13px; }
 .volver { margin-bottom: 12px; }
 .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
-.dato span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+.dato > span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
 .dato strong { display: block; font-size: 17px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 @media (max-width: 860px) {
@@ -577,3 +577,6 @@ h1, h2, h3 { margin: 0; }
   /* Tabla de empresas: en el celular solo empresa, plan y estado */
   .admin-app .tabla-scroll .tabla.compacta-movil { min-width: 0; }
 }
+.badge.fundadora { background: var(--brand-soft); color: var(--brand); }
+.page-head h1 .badge { font-family: 'Inter', sans-serif; font-size: 13px; letter-spacing: 0; }
+.input:disabled { opacity: 0.5; }
