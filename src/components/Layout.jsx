@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText, ShieldCheck } from 'lucide-react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText, ShieldCheck, KeyRound, LogOut, LogIn, CircleUser } from 'lucide-react'
 import Registrar from './Registrar'
 import DetalleRegistro from './DetalleRegistro'
+import CambiarPassword from './CambiarPassword'
 import { useDatos } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import { dinero } from '../lib/format'
@@ -28,7 +29,14 @@ export default function Layout() {
   const secundarias = NAV.slice(4)
   const enSecundaria = secundarias.some((n) => pathname.startsWith(n.to))
   const { toast, exito } = useDatos()
-  const { usuario } = useAuth()
+  const { usuario, cerrarSesion } = useAuth()
+  const navigate = useNavigate()
+  const [cambiandoPassword, setCambiandoPassword] = useState(false)
+  const salir = async () => {
+    setMenuMas(false)
+    await cerrarSesion()
+    navigate('/login', { replace: true })
+  }
 
   // Atajo de teclado: "V" abre el registro de venta (si no se está escribiendo)
   useEffect(() => {
@@ -59,6 +67,16 @@ export default function Layout() {
             <ShoppingBag size={18} /> Registrar venta <kbd>V</kbd>
           </button>
           <button className="btn btn-registrar" onClick={() => setRegistrando(true)}><Plus size={18} /> Otro registro</button>
+          {usuario ? (
+            <div className="cuenta">
+              <CircleUser size={18} />
+              <div className="cuenta-datos" title={usuario.email}><strong>{usuario.nombre}</strong><span>{usuario.email}</span></div>
+              <button className="cuenta-btn" onClick={() => setCambiandoPassword(true)} title="Cambiar contraseña" aria-label="Cambiar contraseña"><KeyRound size={17} /></button>
+              <button className="cuenta-btn" onClick={salir} title="Cerrar sesión" aria-label="Cerrar sesión"><LogOut size={17} /></button>
+            </div>
+          ) : (
+            <Link className="nav-link" to="/login"><LogIn size={20} />Ingresar</Link>
+          )}
         </div>
       </aside>
 
@@ -82,6 +100,30 @@ export default function Layout() {
                 <strong>{label}</strong>
               </NavLink>
             ))}
+            {usuario?.esSuperadmin && (
+              <NavLink to="/admin" className="opcion-registro" onClick={() => setMenuMas(false)}>
+                <div className="mov-icon" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}><ShieldCheck size={22} /></div>
+                <strong>Plataforma</strong>
+              </NavLink>
+            )}
+            {usuario ? (
+              <>
+                <div className="menu-cuenta sub">{usuario.nombre} · {usuario.email}</div>
+                <button className="opcion-registro" onClick={() => { setMenuMas(false); setCambiandoPassword(true) }}>
+                  <div className="mov-icon" style={{ background: 'var(--surface-2)', color: 'var(--ink)' }}><KeyRound size={22} /></div>
+                  <strong>Cambiar contraseña</strong>
+                </button>
+                <button className="opcion-registro" onClick={salir}>
+                  <div className="mov-icon" style={{ background: 'var(--egreso-soft)', color: 'var(--egreso)' }}><LogOut size={22} /></div>
+                  <strong>Cerrar sesión</strong>
+                </button>
+              </>
+            ) : (
+              <Link to="/login" className="opcion-registro" onClick={() => setMenuMas(false)}>
+                <div className="mov-icon" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}><LogIn size={22} /></div>
+                <strong>Ingresar</strong>
+              </Link>
+            )}
           </div>
         </div>
       )}
@@ -93,6 +135,7 @@ export default function Layout() {
           onClose={() => setRegistrando(false)}
         />
       )}
+      {cambiandoPassword && <CambiarPassword onClose={() => setCambiandoPassword(false)} />}
       {detalle && <DetalleRegistro {...detalle} onClose={() => setDetalle(null)} />}
       {exito && (
         <div className="exito" key={exito.clave} role="status">
