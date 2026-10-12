@@ -603,3 +603,15 @@ button.opcion-registro { font: inherit; text-align: left; width: 100%; }
 .selector-empresa { margin: -12px 4px 14px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.06); color: #f6ead6; font-size: 14px; }
 .selector-empresa option { color: var(--ink); }
 .form.anular { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+
+/* ---------- Configuración ---------- */
+.grid-listas { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; }
+.lista-editable ul { list-style: none; margin: 0 0 12px; padding: 0; }
+.lista-editable li { display: flex; align-items: center; gap: 6px; padding: 7px 0; border-top: 1px solid var(--line); min-height: 46px; }
+.lista-editable li:first-child { border-top: 0; }
+.lista-editable li.inactiva .lista-nombre { color: var(--muted); text-decoration: line-through; }
+.lista-nombre { flex: 1; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.lista-editar, .lista-agregar { display: flex; gap: 6px; align-items: center; width: 100%; }
+.lista-editar .input, .lista-agregar .input { flex: 1; min-width: 0; width: auto; }
+.lista-editable .alerta-error { margin-bottom: 10px; }
+.switch:disabled { opacity: 0.6; }

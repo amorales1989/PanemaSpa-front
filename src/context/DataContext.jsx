@@ -290,6 +290,9 @@ export function DataProvider({ children }) {
     }
   }, [datos, avisar])
 
+  // Después de editar canales, categorías, etc. en Configuración
+  const recargarConfig = useCallback(async () => setConfig(await api('/config')), [])
+
   // ---------- Listas de la empresa (antes fijas en mock.js) ----------
 
   const listas = useMemo(() => {
@@ -337,11 +340,11 @@ export function DataProvider({ children }) {
     () => ({
       ...datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen,
       guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios,
-      listas, puede, hoy, recargar: cargar,
+      listas, config, recargarConfig, puede, hoy, recargar: cargar,
     }),
     // hoy cambia en cada render; se usa solo su valor del día
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios, listas, puede, hoyIso, cargar],
+    [datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios, listas, config, recargarConfig, puede, hoyIso, cargar],
   )
 
   if (error) {

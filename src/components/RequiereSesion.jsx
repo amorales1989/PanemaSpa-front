@@ -12,6 +12,7 @@ export const SECCIONES = [
   { ruta: '/promos', permisos: ['promos.gestionar', 'estadisticas.ver'] },
   { ruta: '/estadisticas', permisos: ['estadisticas.ver'] },
   { ruta: '/reportes', permisos: ['reportes.descargar'] },
+  { ruta: '/configuracion', permisos: ['usuarios.gestionar', 'configuracion.gestionar', 'sucursales.gestionar'] },
 ]
 
 export const seccionDe = (pathname) =>

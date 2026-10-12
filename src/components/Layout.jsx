@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText, ShieldCheck, KeyRound, LogOut, LogIn, CircleUser } from 'lucide-react'
+import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText, ShieldCheck, KeyRound, LogOut, LogIn, CircleUser, Settings } from 'lucide-react'
 import Registrar from './Registrar'
 import DetalleRegistro from './DetalleRegistro'
 import CambiarPassword from './CambiarPassword'
@@ -18,6 +18,7 @@ const NAV = [
   { to: '/promos', label: 'Promos', Icono: BadgePercent },
   { to: '/estadisticas', label: 'Estadísticas', Icono: BarChart3 },
   { to: '/reportes', label: 'Reportes', Icono: FileText },
+  { to: '/configuracion', label: 'Configuración', Icono: Settings },
 ]
 
 export default function Layout() {

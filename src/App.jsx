@@ -10,6 +10,7 @@ import Productos from './pages/Productos'
 import ItemDetalle from './pages/ItemDetalle'
 import Promos from './pages/Promos'
 import Reportes from './pages/Reportes'
+import Configuracion from './pages/Configuracion'
 import Login from './pages/Login'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminEmpresas from './pages/admin/AdminEmpresas'
@@ -43,6 +44,7 @@ export default function App() {
               <Route path="promos" element={<Promos />} />
               <Route path="reportes" element={<Reportes />} />
               <Route path="estadisticas" element={<Estadisticas />} />
+              <Route path="configuracion" element={<Configuracion />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
