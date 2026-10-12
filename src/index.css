@@ -624,3 +624,29 @@ button.opcion-registro { font: inherit; text-align: left; width: 100%; }
 .importar-resumen strong { font-size: 18px; }
 .importar-ok { display: flex; align-items: center; gap: 8px; color: var(--ingreso); font-weight: 600; }
 .segmented { max-width: 100%; overflow-x: auto; }
+
+/* ---------- Proveedores ---------- */
+.grid-proveedores { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); align-items: start; }
+.proveedor { display: flex; flex-direction: column; gap: 12px; }
+.proveedor.inactivo { opacity: 0.65; }
+.proveedor-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.proveedor-head h2 { font-size: 18px; font-weight: 600; }
+.proveedor-datos { display: flex; flex-direction: column; }
+.dato-copiable { display: flex; align-items: center; gap: 8px; padding: 4px 0; min-height: 36px; }
+.dato-copiable > span { width: 92px; flex-shrink: 0; font-size: 13px; color: var(--muted); }
+.dato-copiable > strong, .dato-copiable > a { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+.dato-copiable > a { color: var(--brand); text-decoration: none; }
+.btn-copiar { flex-shrink: 0; }
+.proveedor-contacto { display: flex; flex-wrap: wrap; gap: 6px; }
+.proveedor-contacto .btn { text-decoration: none; border: 1px solid var(--line); }
+.proveedor-notas { margin: 0; font-size: 14px; color: var(--muted); white-space: pre-line; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+.cuenta-banco { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; }
+.cuenta-banco.principal { border-color: #b9dcc9; background: #f7fbf8; }
+.cuenta-banco-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.cuenta-banco-acciones { margin-left: auto; display: flex; }
+.btn.btn-copiar-todo { margin-top: 8px; padding: 10px 14px; font-size: 14px; }
+.proveedor-pie { border-top: 1px solid var(--line); padding-top: 10px; }
+textarea.input { resize: vertical; font: inherit; }
+@media (max-width: 520px) {
+  .grid-proveedores { grid-template-columns: 1fr; }
+}

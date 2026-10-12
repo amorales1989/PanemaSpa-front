@@ -80,7 +80,6 @@ function Listas() {
           <ListaEditable titulo="Categorías de egresos" ayuda="Sueldos, arriendo, servicios…" lista="categorias" extra={{ ambito: 'egreso' }}
             filas={config.categorias.egreso} etiqueta={lleva} onCambio={recargarConfig} />
           <ListaEditable titulo="Motivos de merma" lista="motivos-merma" filas={config.motivosMerma} onCambio={recargarConfig} />
-          <ListaEditable titulo="Proveedores" ayuda="También se agregan solos al registrar una compra" lista="proveedores" filas={config.proveedores} onCambio={recargarConfig} />
         </>
       )}
       {puede('sucursales.gestionar') && (
