@@ -6,7 +6,7 @@ import BotonPDF from '../components/BotonPDF'
 import { SelectorPeriodo, ListaPorDia, Barras } from '../components/ui'
 import { TIPOS, categoriasDe } from '../lib/tipos'
 import { agrupar, agruparItemsPorCategoria, topItems } from '../lib/stats'
-import { dinero, porcentaje } from '../lib/format'
+import { dinero, isoLocal, porcentaje } from '../lib/format'
 import { fmtNum } from '../lib/items'
 
 const POR_PAGINA = 40
@@ -20,7 +20,10 @@ export default function Movimientos({ tipo }) {
   const [busqueda, setBusqueda] = useState('')
   const [visibles, setVisibles] = useState(POR_PAGINA)
 
-  const r = rango(periodo)
+  // Quien no ve las ventas de todos (Vendedor) solo ve las suyas de hoy: el servidor ya no le manda otras
+  const soloHoy = tipo === 'ingresos' && !datos.puede('ventas.ver_todas')
+  const hoyIso = isoLocal(datos.hoy)
+  const r = soloHoy ? { desde: hoyIso, hasta: hoyIso } : rango(periodo)
   const delPeriodo = useMemo(() => enRango(datos[tipo], r.desde, r.hasta), [datos, tipo, r.desde, r.hasta])
 
   const filtrados = useMemo(() => {
@@ -42,8 +45,8 @@ export default function Movimientos({ tipo }) {
     <div className="pagina-mov">
       <div className="page-head">
         <div>
-          <h1 className="serif">{t.titulo}</h1>
-          <p>{t.ayuda}</p>
+          <h1 className="serif">{soloHoy ? 'Mis ventas de hoy' : t.titulo}</h1>
+          <p>{soloHoy ? 'Las ventas que registraste hoy' : t.ayuda}</p>
         </div>
         <div className="acciones-head">
         <BotonPDF tipo={{ ingresos: 'ventas', egresos: 'egresos', mermas: 'merma' }[tipo]} periodo={periodo} />
@@ -55,12 +58,12 @@ export default function Movimientos({ tipo }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: 16 }}><SelectorPeriodo valor={periodo} onChange={(p) => { setPeriodo(p); setVisibles(POR_PAGINA) }} /></div>
+      {!soloHoy && <div style={{ marginBottom: 16 }}><SelectorPeriodo valor={periodo} onChange={(p) => { setPeriodo(p); setVisibles(POR_PAGINA) }} /></div>}
 
       <div className="card resumen-filtro">
         <div><span>Total</span><strong style={{ color: t.color }}>{dinero(total)}</strong></div>
         <div><span>{t.registros}</span><strong>{filtrados.length.toLocaleString('es-CL')}</strong></div>
-        <div><span>Promedio por día</span><strong>{dinero(total / dias)}</strong></div>
+        {!soloHoy && <div><span>Promedio por día</span><strong>{dinero(total / dias)}</strong></div>}
         {tipo === 'ingresos' && <div><span>Ticket promedio</span><strong>{dinero(filtrados.length ? total / filtrados.length : 0)}</strong></div>}
         {tipo === 'mermas' && <div><span>% sobre ventas</span><strong>{porcentaje(ventas ? (total / ventas) * 100 : 0)}</strong></div>}
       </div>

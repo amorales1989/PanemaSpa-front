@@ -12,6 +12,8 @@ export default function BotonPDF({ tipo, periodo, texto = 'Descargar PDF', class
   const { empresa } = useAuth()
   const { avisar } = useDialogo()
   const [generando, setGenerando] = useState(false)
+  // Los informes son para quien tiene el permiso (el Vendedor no lo tiene)
+  if (!datos.puede('reportes.descargar')) return null
 
   const descargar = async () => {
     setGenerando(true)
