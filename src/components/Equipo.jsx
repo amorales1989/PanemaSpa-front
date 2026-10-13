@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Copy, KeyRound, Trash2, UserPlus } from 'lucide-react'
+import { Check, Copy, KeyRound, Pencil, Trash2, UserPlus } from 'lucide-react'
 import { api } from '../lib/api'
 import Modal from './Modal'
 import { useDialogo } from './Dialogo'
+import { useAuth } from '../context/AuthContext'
 import { haceCuanto } from '../pages/admin/adminFormato'
 
 // Contraseña temporal: se muestra una sola vez para entregarla a la persona
@@ -80,9 +81,55 @@ function Agregar({ roles, onAgregar, onClose }) {
 // Tabla del equipo de una empresa. La usan:
 //  - el panel de plataforma: base = /admin/empresas/:id/usuarios (puede todo)
 //  - la configuración de la empresa: base = /equipo (no toca su propia fila; solo un dueño nombra dueños)
+// Corregir nombre o email de un miembro (o los propios)
+function Editar({ miembro, propio, onGuardar, onClose }) {
+  const [nombre, setNombre] = useState(miembro.nombre)
+  const [email, setEmail] = useState(miembro.email)
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  const enviar = async (e) => {
+    e.preventDefault()
+    const cambios = {
+      ...(nombre.trim() !== miembro.nombre && { nombre: nombre.trim() }),
+      ...(email.trim().toLowerCase() !== miembro.email && { email: email.trim() }),
+    }
+    if (!Object.keys(cambios).length) return onClose()
+    setEnviando(true)
+    setError('')
+    try {
+      await onGuardar(cambios)
+      onClose()
+    } catch (err) {
+      setError(Object.values(err.detalles ?? {})[0]?.[0] ?? err.message)
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <Modal titulo={propio ? 'Mis datos' : `Editar a ${miembro.nombre}`} onClose={onClose}>
+      <form className="form" onSubmit={enviar}>
+        <div className="campo">
+          <label htmlFor="ed-nombre">Nombre</label>
+          <input id="ed-nombre" className="input" required autoFocus maxLength={100} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        </div>
+        <div className="campo">
+          <label htmlFor="ed-email">Email</label>
+          <input id="ed-email" type="email" className="input" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <div className="sub" style={{ marginTop: 6 }}>Es el usuario para entrar al sistema{propio ? '' : ': avísale si lo cambias'}.</div>
+        </div>
+        {error && <div className="alerta-error" role="alert">{error}</div>}
+        <button className="btn btn-primary" disabled={enviando}><Check size={18} /> {enviando ? 'Guardando…' : 'Guardar'}</button>
+      </form>
+    </Modal>
+  )
+}
+
 export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
   const [datos, setDatos] = useState(null)
   const { confirmar } = useDialogo()
+  const { usuario, recargarPerfil } = useAuth()
+  const [editando, setEditando] = useState(null)
   const [agregando, setAgregando] = useState(false)
   const [clave, setClave] = useState(null) // { titulo, email, clave }
   const [aviso, setAviso] = useState('')
@@ -118,6 +165,13 @@ export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
     await cargar()
     mostrarAviso('Usuario actualizado')
   })
+
+  const guardarDatos = async (m, cambios) => {
+    await api(`${base}/${m.membresiaId}`, { metodo: 'PATCH', body: cambios })
+    await cargar()
+    if (m.usuarioId === usuario?.id) await recargarPerfil() // el menú muestra el nombre nuevo
+    mostrarAviso('Datos actualizados')
+  }
 
   // Quita el acceso a la empresa; lo que registró (ventas, compras, mermas) queda con su nombre
   const eliminar = conError(async (m) => {
@@ -177,6 +231,11 @@ export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
                   </td>
                   <td className="ocultar-movil">{haceCuanto(m.ultimoAccesoEn)}</td>
                   <td className="acciones-fila">
+                    {(editable(m) || m.usuarioId === yoId) && (
+                      <button className="icon-btn" title="Editar nombre o email" aria-label={`Editar a ${m.nombre}`} onClick={() => setEditando(m)}>
+                        <Pencil size={17} />
+                      </button>
+                    )}
                     {editable(m) && (<>
                     <button className="btn btn-ghost btn-sm" onClick={() => cambiar(m, { estado: m.estado === 'activo' ? 'suspendido' : 'activo' })}>
                       {m.estado === 'activo' ? 'Suspender' : 'Reactivar'}
@@ -196,6 +255,10 @@ export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
         </div>
       )}
       {agregando && datos && <Agregar roles={rolesAsignables} onAgregar={agregar} onClose={() => setAgregando(false)} />}
+      {editando && (
+        <Editar miembro={editando} propio={editando.usuarioId === yoId}
+          onGuardar={(cambios) => guardarDatos(editando, cambios)} onClose={() => setEditando(null)} />
+      )}
       {clave && <ClaveTemporal {...clave} onClose={() => setClave(null)} />}
       {aviso && <div className="toast">{aviso}</div>}
     </div>
