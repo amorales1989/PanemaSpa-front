@@ -3,11 +3,13 @@ import { Camera, Loader2 } from 'lucide-react'
 import ImagenProducto from './ImagenProducto'
 import { useDatos } from '../context/DataContext'
 import { reducirImagen } from '../lib/imagen'
+import { useDialogo } from './Dialogo'
 
 // Foto editable del producto: se toca (o se arrastra un archivo encima) para subirla.
 // En el celular, el selector ofrece sacar la foto con la cámara.
 export default function FotoProducto({ producto }) {
   const { imagenes, setImagen } = useDatos()
+  const { avisar } = useDialogo()
   const inputRef = useRef(null)
   const [cargando, setCargando] = useState(false)
   const [arrastrando, setArrastrando] = useState(false)
@@ -19,7 +21,7 @@ export default function FotoProducto({ producto }) {
     try {
       setImagen(producto.id, await reducirImagen(archivo))
     } catch {
-      alert('No se pudo usar ese archivo. Elige una foto (JPG, PNG o similar).')
+      avisar({ tipo: 'error', titulo: 'No se pudo usar ese archivo', mensaje: 'Elige una foto (JPG, PNG o similar).' })
     } finally {
       setCargando(false)
     }

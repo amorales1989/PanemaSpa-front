@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Copy, KeyRound, Trash2, UserPlus } from 'lucide-react'
 import { api } from '../lib/api'
 import Modal from './Modal'
+import { useDialogo } from './Dialogo'
 import { haceCuanto } from '../pages/admin/adminFormato'
 
 // Contraseña temporal: se muestra una sola vez para entregarla a la persona
@@ -81,6 +82,7 @@ function Agregar({ roles, onAgregar, onClose }) {
 //  - la configuración de la empresa: base = /equipo (no toca su propia fila; solo un dueño nombra dueños)
 export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
   const [datos, setDatos] = useState(null)
+  const { confirmar } = useDialogo()
   const [agregando, setAgregando] = useState(false)
   const [clave, setClave] = useState(null) // { titulo, email, clave }
   const [aviso, setAviso] = useState('')
@@ -119,14 +121,24 @@ export default function Equipo({ base, yoId = null, puedeDuenos = true }) {
 
   // Quita el acceso a la empresa; lo que registró (ventas, compras, mermas) queda con su nombre
   const eliminar = conError(async (m) => {
-    if (!window.confirm(`¿Eliminar a ${m.nombre} del equipo?\n\nDeja de poder entrar a la empresa de inmediato. Las ventas y registros que hizo se conservan con su nombre.`)) return
+    const ok = await confirmar({
+      titulo: `¿Eliminar a ${m.nombre} del equipo?`,
+      mensaje: 'Deja de poder entrar a la empresa de inmediato. Las ventas y registros que hizo se conservan con su nombre.',
+      textoAceptar: 'Eliminar del equipo', peligro: true,
+    })
+    if (!ok) return
     await api(`${base}/${m.membresiaId}`, { metodo: 'DELETE' })
     await cargar()
     mostrarAviso(`${m.nombre} ya no es parte del equipo`)
   })
 
   const restablecer = conError(async (m) => {
-    if (!window.confirm(`¿Generar una contraseña nueva para ${m.nombre}? Se cerrarán sus sesiones abiertas.`)) return
+    const ok = await confirmar({
+      titulo: `¿Restablecer la contraseña de ${m.nombre}?`,
+      mensaje: 'Se genera una contraseña temporal nueva y se cierran sus sesiones abiertas. Al entrar tendrá que cambiarla.',
+      textoAceptar: 'Restablecer',
+    })
+    if (!ok) return
     const r = await api(`${base}/${m.membresiaId}/restablecer-password`, { metodo: 'POST' })
     setClave({ titulo: 'Contraseña restablecida', email: m.email, clave: r.passwordTemporal })
   })

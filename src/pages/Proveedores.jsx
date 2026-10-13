@@ -6,6 +6,7 @@ import { normalizarRut } from '../lib/rut'
 import { dinero, etiquetaDia } from '../lib/format'
 import { useDatos } from '../context/DataContext'
 import Modal from '../components/Modal'
+import { useDialogo } from '../components/Dialogo'
 
 const TIPOS_CUENTA = { corriente: 'Cuenta corriente', vista: 'Cuenta vista', rut: 'CuentaRUT', ahorro: 'Cuenta de ahorro' }
 // Sugerencias del campo Banco (se puede escribir cualquier otro)
@@ -174,6 +175,7 @@ const limpiar = (form) => Object.fromEntries(Object.entries(form).map(([k, v]) =
 
 export default function Proveedores() {
   const { puede, hoy, recargarConfig } = useDatos()
+  const { confirmar } = useDialogo()
   const gestiona = puede('proveedores.gestionar')
   const [proveedores, setProveedores] = useState(null)
   const [busqueda, setBusqueda] = useState('')
@@ -212,7 +214,12 @@ export default function Proveedores() {
   }
 
   const eliminarCuenta = async (p, c) => {
-    if (!confirm(`¿Eliminar la cuenta ${c.banco} ${c.numero}?`)) return
+    const ok = await confirmar({
+      titulo: '¿Eliminar esta cuenta?',
+      mensaje: `${c.banco} · ${c.numero}\nTitular: ${c.titular}\n\nEl cambio queda registrado en el historial.`,
+      textoAceptar: 'Eliminar cuenta', peligro: true,
+    })
+    if (!ok) return
     try {
       reemplazar(await api(`/proveedores/${p.id}/cuentas/${c.id}`, { metodo: 'DELETE' }))
       mostrar('Cuenta eliminada')

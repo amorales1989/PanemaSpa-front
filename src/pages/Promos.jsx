@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Tag } from 'lucide-react'
 import { useDatos, rango, enRango } from '../context/DataContext'
 import Modal from '../components/Modal'
 import BotonPDF from '../components/BotonPDF'
+import { useDialogo } from '../components/Dialogo'
 import { Catalogo, Ticket, sumarAlTicket } from '../components/Items'
 import { statsPromos } from '../lib/stats'
 import { dinero, porcentaje } from '../lib/format'
@@ -124,6 +125,7 @@ function PromoForm({ promo, onClose }) {
 export default function Promos() {
   const { promos, ingresos, guardarPromo, eliminarPromo, productos, puede } = useDatos()
   const gestiona = puede('promos.gestionar')
+  const { confirmar } = useDialogo()
   const [editando, setEditando] = useState(null) // null | 'nueva' | promo
 
   const ventas = useMemo(() => {
@@ -131,8 +133,13 @@ export default function Promos() {
     return statsPromos(enRango(ingresos, r.desde, r.hasta))
   }, [ingresos])
 
-  const borrar = (p) => {
-    if (confirm(`¿Eliminar la promo "${p.nombre}"? Las ventas ya registradas se mantienen.`)) eliminarPromo(p.id)
+  const borrar = async (p) => {
+    const ok = await confirmar({
+      titulo: `¿Eliminar la promo "${p.nombre}"?`,
+      mensaje: 'Deja de ofrecerse en la venta. Las ventas ya registradas se mantienen.',
+      textoAceptar: 'Eliminar promo', peligro: true,
+    })
+    if (ok) eliminarPromo(p.id)
   }
 
   const ordenadas = [...promos].sort((a, b) => (a.activa === b.activa ? a.codigo - b.codigo : a.activa ? -1 : 1))

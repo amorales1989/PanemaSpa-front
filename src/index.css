@@ -691,3 +691,18 @@ textarea.input { resize: vertical; font: inherit; }
   .resumen-productos-head .segmented { width: 100%; }
 }
 .icon-btn.icon-peligro:hover { color: var(--egreso); background: var(--egreso-soft); }
+
+/* ---------- Diálogos (confirmar / avisar) ---------- */
+.overlay.overlay-dialogo { z-index: 90; }
+.modal.dialogo { max-width: 420px; display: flex; flex-direction: column; gap: 10px; }
+.dialogo h2 { font-size: 20px; }
+.dialogo p { margin: 0; color: var(--muted); line-height: 1.5; white-space: pre-line; }
+.dialogo-icono { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); margin-bottom: 4px; }
+.dialogo-icono.peligro { background: var(--egreso-soft); color: var(--egreso); }
+.dialogo-acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.btn.btn-peligro-solido { background: var(--egreso); color: #fff; }
+.btn.btn-peligro-solido:hover { filter: brightness(1.08); }
+@media (max-width: 520px) {
+  .dialogo-acciones { flex-direction: column-reverse; }
+  .dialogo-acciones .btn { width: 100%; }
+}

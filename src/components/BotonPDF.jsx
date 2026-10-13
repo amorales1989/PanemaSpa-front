@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 import { useDatos } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
+import { useDialogo } from './Dialogo'
 import { descargarReporte } from '../reportes/descargar'
 
 // Botón que genera y descarga el informe PDF `tipo` para el `periodo` indicado
 export default function BotonPDF({ tipo, periodo, texto = 'Descargar PDF', className = 'btn btn-pdf' }) {
   const datos = useDatos()
   const { empresa } = useAuth()
+  const { avisar } = useDialogo()
   const [generando, setGenerando] = useState(false)
 
   const descargar = async () => {
@@ -16,7 +18,7 @@ export default function BotonPDF({ tipo, periodo, texto = 'Descargar PDF', class
       await descargarReporte(tipo, datos, periodo, empresa.nombre)
     } catch (e) {
       console.error(e)
-      alert('No se pudo generar el PDF. Intenta de nuevo.')
+      avisar({ tipo: 'error', titulo: 'No se pudo generar el PDF', mensaje: 'Revisa tu conexión e intenta de nuevo.' })
     } finally {
       setGenerando(false)
     }

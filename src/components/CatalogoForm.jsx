@@ -4,6 +4,7 @@ import Modal from './Modal'
 import FotoProducto from './FotoProducto'
 import { useDatos } from '../context/DataContext'
 import { dinero, porcentaje } from '../lib/format'
+import { useDialogo } from './Dialogo'
 
 const UNIDADES = {
   producto: [['un', 'Por unidad'], ['kg', 'Por kilo']],
@@ -37,6 +38,7 @@ const conPuntos = (v) => (v ? Number(v).toLocaleString('es-CL') : '')
 export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
   const { productos, insumos, promos, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, setImagen, listas } = useDatos()
   const esProducto = tipo === 'producto'
+  const { confirmar, avisar } = useDialogo()
   const lista = esProducto ? productos : insumos
   const nuevo = !item
 
@@ -103,10 +105,15 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
   const borrar = async () => {
     const enPromo = esProducto && promos.find((p) => p.productos.some((c) => c.id === id))
     if (enPromo) {
-      alert(`No se puede eliminar: "${item.nombre}" está en la promo "${enPromo.nombre}". Quítalo de la promo primero.`)
+      await avisar({ tipo: 'error', titulo: 'No se puede eliminar', mensaje: `"${item.nombre}" está en la promo "${enPromo.nombre}". Quítalo de la promo primero.` })
       return
     }
-    if (!confirm(`¿Eliminar "${item.nombre}" del catálogo?\n\nLas ventas, compras y mermas ya registradas no se borran.`)) return
+    const ok = await confirmar({
+      titulo: `¿Eliminar "${item.nombre}"?`,
+      mensaje: 'Sale del catálogo. Las ventas, compras y mermas ya registradas no se borran.',
+      textoAceptar: 'Eliminar', peligro: true,
+    })
+    if (!ok) return
     try {
       if (esProducto) await eliminarProducto(id)
       else await eliminarInsumo(id)
