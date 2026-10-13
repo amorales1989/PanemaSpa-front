@@ -6,6 +6,7 @@ import DetalleRegistro from './DetalleRegistro'
 import CambiarPassword from './CambiarPassword'
 import { useDatos } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
+import { urlArchivo } from '../lib/api'
 import { seccionDe } from './RequiereSesion'
 import { dinero } from '../lib/format'
 
@@ -62,7 +63,9 @@ export default function Layout() {
     <div className="app">
       <aside className="sidebar">
         <div className="logo">
-          <div className="logo-mark">{empresa.nombre.charAt(0).toUpperCase()}</div>
+          {empresa.logoUrl
+            ? <img className="logo-img" src={urlArchivo(empresa.logoUrl)} alt="" />
+            : <div className="logo-mark">{empresa.nombre.charAt(0).toUpperCase()}</div>}
           <div className="logo-text">{empresa.nombre}<small>Control del negocio</small></div>
         </div>
         {empresas.length > 1 && (

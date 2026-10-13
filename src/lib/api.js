@@ -8,6 +8,9 @@ let accessToken = null
 let empresaId = null
 
 export const setToken = (t) => { accessToken = t }
+
+// '/uploads/…' (lo que guarda la API) → URL que carga el navegador (pasa por el proxy /api)
+export const urlArchivo = (ruta) => (ruta ? `${BASE}${ruta}` : null)
 export const setEmpresaActiva = (id) => { empresaId = id }
 
 export class ErrorApi extends Error {

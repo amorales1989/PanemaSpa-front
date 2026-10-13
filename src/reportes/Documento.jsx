@@ -1,4 +1,4 @@
-import { Document, Page, View, Text, StyleSheet, Font } from '@react-pdf/renderer'
+import { Document, Page, View, Text, StyleSheet, Font, Image } from '@react-pdf/renderer'
 import inter400 from '@fontsource/inter/files/inter-latin-400-normal.woff?url'
 import inter500 from '@fontsource/inter/files/inter-latin-500-normal.woff?url'
 import inter600 from '@fontsource/inter/files/inter-latin-600-normal.woff?url'
@@ -27,6 +27,7 @@ const s = StyleSheet.create({
   pagina: { fontFamily: 'Inter', fontSize: 9, color: C.tinta, paddingTop: 64, paddingBottom: 52, paddingHorizontal: 40, backgroundColor: '#fff' },
   encabezado: { position: 'absolute', top: 22, left: 40, right: 40, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: C.linea, paddingBottom: 10 },
   logo: { width: 22, height: 22, borderRadius: 6, backgroundColor: C.marca, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  logoImagen: { height: 24, maxWidth: 72, objectFit: 'contain', marginRight: 8 },
   logoLetra: { fontFamily: 'Fraunces', fontSize: 13, color: C.marcaSuave, marginTop: -1 },
   marcaNombre: { fontFamily: 'Fraunces', fontSize: 12 },
   marcaSub: { fontSize: 7, color: C.suave, letterSpacing: 0.6, textTransform: 'uppercase' },
@@ -251,13 +252,13 @@ function Bloque({ b }) {
 }
 
 // `marca`: nombre de la empresa (cada negocio ve el suyo en sus informes)
-export function Documento({ reporte, marca }) {
+export function Documento({ reporte, marca, logo }) {
   return (
     <Document title={`${reporte.titulo} · ${marca}`} author={marca} creator={`${marca} · Control del negocio`}>
       {reporte.partes.map((bloques, i) => (
         <Page key={i} size="A4" style={s.pagina}>
           <View style={s.encabezado} fixed>
-            <View style={s.logo}><Text style={s.logoLetra}>{marca.charAt(0).toUpperCase()}</Text></View>
+            {logo ? <Image src={logo} style={s.logoImagen} /> : <View style={s.logo}><Text style={s.logoLetra}>{marca.charAt(0).toUpperCase()}</Text></View>}
             <View>
               <Text style={s.marcaNombre}>{marca}</Text>
               <Text style={s.marcaSub}>Control del negocio</Text>

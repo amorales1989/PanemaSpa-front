@@ -1,7 +1,7 @@
 // Traducción entre la API y la forma de datos que usan las pantallas
 // (la misma que tenía mock.js, para no reescribir páginas ni estadísticas).
 
-const BASE_API = import.meta.env.VITE_API_URL ?? '/api'
+import { urlArchivo } from './api'
 
 // Hora "HH:MM" del registro en la zona horaria de la empresa
 export function horaLocal(iso, zonaHoraria) {
@@ -18,7 +18,7 @@ export const ordenarRecientes = (a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.f
 export const productoDesdeApi = (p) => ({
   id: p.id, codigo: p.codigo, nombre: p.nombre, categoria: p.categoria ?? 'Sin categoría', categoriaId: p.categoriaId,
   unidad: p.unidad, precio: p.precio, costo: p.costo, activo: p.activo,
-  imagen: p.imagenUrl ? `${BASE_API}${p.imagenUrl}` : null,
+  imagen: urlArchivo(p.imagenUrl),
 })
 
 export const insumoDesdeApi = (i) => ({

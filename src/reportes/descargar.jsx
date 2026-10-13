@@ -1,13 +1,30 @@
 // Genera el PDF en el navegador y lo descarga. La librería de PDF se carga
 // recién al pedir el primer informe, para no hacer más pesada la app.
-export async function descargarReporte(tipo, datos, periodo, marca = 'Panema') {
+// El logo se pasa como data URL: así el PDF no depende de volver a pedirlo
+async function logoComoDataUrl(url) {
+  if (!url) return null
+  try {
+    const blob = await (await fetch(url)).blob()
+    return await new Promise((ok, mal) => {
+      const lector = new FileReader()
+      lector.onload = () => ok(lector.result)
+      lector.onerror = mal
+      lector.readAsDataURL(blob)
+    })
+  } catch {
+    return null // sin logo, el informe usa la inicial
+  }
+}
+
+export async function descargarReporte(tipo, datos, periodo, marca = 'Panema', logoUrl = null) {
   const [{ pdf }, { Documento }, { construirReporte }] = await Promise.all([
     import('@react-pdf/renderer'),
     import('./Documento'),
     import('./datos'),
   ])
   const reporte = construirReporte(tipo, datos, periodo)
-  const blob = await pdf(<Documento reporte={reporte} marca={marca} />).toBlob()
+  const logo = await logoComoDataUrl(logoUrl)
+  const blob = await pdf(<Documento reporte={reporte} marca={marca} logo={logo} />).toBlob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
