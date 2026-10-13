@@ -71,7 +71,8 @@ export default function RegistroForm({ tipo, onDone }) {
     }
   }
 
-  const campoFecha = (
+  // Registrar con otra fecha requiere permiso; sin él (Vendedor, Producción) siempre es hoy
+  const campoFecha = puede('movimientos.fecha_anterior') && (
     <div className="campo">
       <label htmlFor="fecha">Fecha</label>
       <input id="fecha" type="date" className="input" value={fecha} max={isoLocal(hoy)} onChange={(e) => setFecha(e.target.value)} />
