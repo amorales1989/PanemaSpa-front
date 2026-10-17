@@ -185,7 +185,7 @@ export function Catalogo({ catalogos, items, onAgregar, pedirPeso }) {
               const esPromo = p.tipo === 'promo'
               const conImagen = p.tipo !== 'insumo'
               return (
-                <button type="button" key={claveItem(p)} className={`tile ${n ? 'en-ticket' : ''} ${esPromo ? 'tile-promo' : ''} ${conImagen ? 'con-imagen' : ''}`} onClick={() => agregar(p)}>
+                <button type="button" key={claveItem(p)} className={`tile ${n ? 'en-ticket' : ''} ${esPromo ? 'tile-promo' : ''} ${conImagen ? 'con-imagen' : ''}`} title={p.nombre} onClick={() => agregar(p)}>
                   {conImagen && <ImagenProducto producto={p} tamano={null} className="tile-imagen" />}
                   <span className="tile-codigo">#{p.codigo}</span>
                   {n ? <span className="tile-badge">{fmtNum(n)}</span> : null}
