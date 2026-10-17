@@ -2,7 +2,7 @@
 // (indicadores, gráficos, rankings, tablas, notas) que luego dibuja Documento.jsx.
 
 import { rango, enRango, suma, PERIODOS } from '../context/DataContext'
-import { agrupar, agruparItemsPorCategoria, serie, porMes, porDiaSemana, topItems, statsProductos, statsInsumos, statsPromos } from '../lib/stats'
+import { agrupar, agruparItemsPorCategoria, serie, porMes, porDiaSemana, notaDiasCerrados, topItems, statsProductos, statsInsumos, statsPromos } from '../lib/stats'
 import { dinero, porcentaje, fechaCorta, desdeIso, etiquetaDia } from '../lib/format'
 import { fmtNum, resumenItems, precioNormal } from '../lib/items'
 
@@ -120,7 +120,7 @@ function ventas(ctx) {
       ],
     },
     {
-      tipo: 'barras', titulo: 'Venta promedio por día de la semana', sub: 'El lunes el local está cerrado',
+      tipo: 'barras', titulo: 'Venta promedio por día de la semana', sub: notaDiasCerrados(porDiaSemana(ctx.ing)) ?? undefined,
       series: [{ clave: 'ingresos', nombre: 'Venta promedio', color: COLORES.ingresos }], datos: porDiaSemana(ctx.ing),
     },
     {

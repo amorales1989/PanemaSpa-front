@@ -77,6 +77,17 @@ export function porDiaSemana(ingresos) {
   return [1, 2, 3, 4, 5, 6, 0].map((d) => ({ label: NOMBRES_DIA[d], ingresos: fechas[d].size ? total[d] / fechas[d].size : 0 }))
 }
 
+const DIA_LARGO = { Lun: 'lunes', Mar: 'martes', 'Mié': 'miércoles', Jue: 'jueves', Vie: 'viernes', 'Sáb': 'sábado', Dom: 'domingo' }
+
+// "El lunes el local está cerrado." si en el período hubo ventas pero ninguna ese día (null si no aplica)
+export function notaDiasCerrados(dias) {
+  if (!dias.some((d) => d.ingresos > 0)) return null
+  const cerrados = dias.filter((d) => !d.ingresos).map((d) => `el ${DIA_LARGO[d.label]}`)
+  if (!cerrados.length) return null
+  const lista = cerrados.length > 1 ? `${cerrados.slice(0, -1).join(', ')} y ${cerrados.at(-1)}` : cerrados[0]
+  return `${lista.charAt(0).toUpperCase()}${lista.slice(1)} el local está cerrado.`
+}
+
 // Ítems con más valor acumulado en los registros (más vendidos, más perdidos...)
 export function topItems(registros, n = 5, tipo) {
   const m = {}

@@ -6,7 +6,7 @@ import {
 import { useDatos, rango, enRango, suma } from '../context/DataContext'
 import BotonPDF from '../components/BotonPDF'
 import { SelectorPeriodo, Barras, TooltipDinero } from '../components/ui'
-import { agrupar, porMes, porDiaSemana } from '../lib/stats'
+import { agrupar, notaDiasCerrados, porMes, porDiaSemana } from '../lib/stats'
 import { dinero, dineroCorto, porcentaje } from '../lib/format'
 
 const C = { ingresos: '#2f7d5b', egresos: '#c2513f', merma: '#c97a1c', ganancia: '#3b2a20' }
@@ -112,7 +112,7 @@ export default function Estadisticas() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <span className="sub">El lunes el local está cerrado.</span>
+          {notaDiasCerrados(dias) && <span className="sub">{notaDiasCerrados(dias)}</span>}
         </div>
       </div>
 

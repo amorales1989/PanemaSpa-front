@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Ban, CalendarPlus, Check, RotateCcw, Star } from 'lucide-react'
+import { ArrowLeft, Ban, CalendarPlus, Check, RotateCcw, Sparkles, Star } from 'lucide-react'
 import { api } from '../../lib/api'
 import { dinero } from '../../lib/format'
 import Modal from '../../components/Modal'
 import AdminUsuarios from './AdminUsuarios'
+import { PanelDemo } from './AdminDemo'
 import { ESTADO_EMPRESA, ESTADO_SUSCRIPCION, fecha, sumarDias } from './adminFormato'
 
 const ESTADOS_SUSCRIPCION = ['prueba', 'activa', 'vencida', 'cancelada']
@@ -156,7 +157,10 @@ export default function AdminEmpresa() {
       <Link to="/admin" className="link volver"><ArrowLeft size={16} /> Empresas</Link>
       <div className="page-head">
         <div>
-          <h1 className="serif">{empresa.nombre} {empresa.fundadora && <span className="badge fundadora"><Star size={12} /> Fundadora</span>}</h1>
+          <h1 className="serif">
+            {empresa.nombre} {empresa.fundadora && <span className="badge fundadora"><Star size={12} /> Fundadora</span>}
+            {empresa.esDemo && <span className="badge demo"><Sparkles size={12} /> Demo</span>}
+          </h1>
           <p>/{empresa.slug} · desde {fecha(empresa.createdAt)} · <span className={`badge ${est?.clase ?? ''}`}>{est?.texto}</span></p>
         </div>
         {suspendida ? (
@@ -174,13 +178,17 @@ export default function AdminEmpresa() {
       )}
 
       <div className="grid grid-2" style={{ marginBottom: 16 }}>
-        <Suscripcion key={`${empresa.planCodigo}-${empresa.suscripcion}-${empresa.pruebaHasta}-${empresa.periodoFin}`}
-          empresa={empresa} planes={planes} onGuardar={guardarSuscripcion} />
+        {empresa.esDemo ? <PanelDemo empresa={empresa} onCambio={cargar} onAviso={mostrarAviso} /> : (
+          <Suscripcion key={`${empresa.planCodigo}-${empresa.suscripcion}-${empresa.pruebaHasta}-${empresa.periodoFin}`}
+            empresa={empresa} planes={planes} onGuardar={guardarSuscripcion} />
+        )}
         <div className="card">
           <div className="card-head"><h2>Uso</h2></div>
           <div className="datos">
             <Dato titulo="Ventas registradas">{Number(empresa.ventas).toLocaleString('es-CL')}</Dato>
             <Dato titulo="Monto vendido">{dinero(empresa.montoVentas)}</Dato>
+            {empresa.esDemo && <Dato titulo="Egresos / merma">{Number(empresa.egresos).toLocaleString('es-CL')} / {Number(empresa.mermas).toLocaleString('es-CL')}</Dato>}
+            {empresa.esDemo && <Dato titulo="Movimientos desde">{fecha(empresa.primeraVenta)}</Dato>}
             <Dato titulo="Productos">{empresa.productos}</Dato>
             <Dato titulo="Sucursales">{empresa.sucursales}</Dato>
             <Dato titulo="Moneda">{empresa.moneda}</Dato>
@@ -191,7 +199,7 @@ export default function AdminEmpresa() {
 
       <div className="grid grid-2">
         <AdminUsuarios empresaId={empresa.id} />
-        <div className="card">
+        {!empresa.esDemo && <div className="card">
           <div className="card-head"><h2>Historial de suscripciones</h2></div>
           <table className="tabla">
             <thead><tr><th>Plan</th><th>Estado</th><th>Período</th></tr></thead>
@@ -205,7 +213,7 @@ export default function AdminEmpresa() {
               ))}
             </tbody>
           </table>
-        </div>
+        </div>}
       </div>
 
       {confirmando && (

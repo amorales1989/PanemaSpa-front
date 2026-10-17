@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, CircleAlert, Clock, Search, ShoppingBag, Star, Users } from 'lucide-react'
+import { Building2, CircleAlert, Clock, Search, ShoppingBag, Sparkles, Star, Users } from 'lucide-react'
 import { api } from '../../lib/api'
 import { dinero } from '../../lib/format'
 import { Kpi } from '../../components/ui'
 import { ESTADO_EMPRESA, ESTADO_SUSCRIPCION, diasHasta, fecha, haceCuanto } from './adminFormato'
+import { NuevaDemo } from './AdminDemo'
 
 const FILTROS = [
   { id: '', label: 'Todas' },
@@ -28,6 +29,7 @@ export default function AdminEmpresas() {
   const [buscar, setBuscar] = useState('')
   const [estado, setEstado] = useState('')
   const [error, setError] = useState('')
+  const [creandoDemo, setCreandoDemo] = useState(false)
 
   useEffect(() => {
     api('/admin/resumen').then(setResumen).catch((e) => setError(e.message))
@@ -51,6 +53,7 @@ export default function AdminEmpresas() {
           <h1 className="serif">Empresas</h1>
           <p>Negocios registrados en la plataforma</p>
         </div>
+        <button className="btn btn-primary" onClick={() => setCreandoDemo(true)}><Sparkles size={18} /> Nueva demo</button>
       </div>
 
       {error && <div className="alerta-error" role="alert">{error}</div>}
@@ -104,10 +107,11 @@ export default function AdminEmpresas() {
                     <tr key={e.id} onClick={() => navigate(`/admin/empresas/${e.id}`)}>
                       <td>
                         <strong>{e.nombre}</strong> {e.fundadora && <span className="badge fundadora"><Star size={11} /> Fundadora</span>}
+                        {e.esDemo && <span className="badge demo"><Sparkles size={11} /> Demo</span>}
                         <div className="sub">{e.duenoEmail ?? 'Sin dueño'} · desde {fecha(e.createdAt)}</div>
                       </td>
                       <td>
-                        {e.plan ?? '—'} {sus && <span className={`badge ${sus.clase}`}>{sus.texto}</span>}
+                        {e.esDemo ? 'Sin plan' : e.plan ?? '—'} {sus && <span className={`badge ${sus.clase}`}>{sus.texto}</span>}
                         <Vencimiento empresa={e} />
                       </td>
                       <td className="num ocultar-movil">{entero(e.usuarios)}</td>
@@ -129,6 +133,7 @@ export default function AdminEmpresas() {
           </div>
         )}
       </div>
+      {creandoDemo && <NuevaDemo onClose={() => setCreandoDemo(false)} />}
     </>
   )
 }

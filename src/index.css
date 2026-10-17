@@ -578,6 +578,9 @@ h1, h2, h3 { margin: 0; }
   .admin-app .tabla-scroll .tabla.compacta-movil { min-width: 0; }
 }
 .badge.fundadora { background: var(--brand-soft); color: var(--brand); }
+.badge.demo { background: #e4ecf7; color: #2f5a8e; }
+.pasos-demo { margin: 0 0 16px; padding-left: 20px; font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
+.pasos-demo strong { color: var(--ink); }
 .page-head h1 .badge { font-family: 'Inter', sans-serif; font-size: 13px; letter-spacing: 0; }
 .input:disabled { opacity: 0.5; }
 .clave-temporal { display: flex; flex-direction: column; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
