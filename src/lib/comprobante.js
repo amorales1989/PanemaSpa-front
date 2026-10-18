@@ -47,6 +47,7 @@ const ESTILOS = {
     td { padding: 7px 4px; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
     .num { text-align: right; white-space: nowrap; }
     .comp { font-size: 11px; color: #666; }
+    .unitario { font-size: 11px; color: #666; }
     .fila { display: flex; justify-content: flex-end; gap: 32px; margin-top: 8px; color: #444; }
     .fila + .total, table + .total { margin-top: 14px; }
     .total { display: flex; justify-content: flex-end; gap: 32px; font-size: 20px; font-weight: 700; margin-top: 6px; }
@@ -60,17 +61,19 @@ function lineas(venta, formato) {
   const descuentos = venta.descuento > 0 ? descuentosPorLinea(venta.items, venta.descuento) : null
   return venta.items.map((i, n) => {
     const desc = descuentos?.[n] ?? 0
+    // Precio por unidad (o por kg / lt) que queda con el descuento aplicado
+    const unitario = desc > 0 && i.cantidad ? `${dinero((subtotal(i) - desc) / i.cantidad)} ${i.unidad === 'un' ? 'c/u' : `/ ${escapar(i.unidad)}`}` : ''
     const comp = i.componentes?.length
       ? `<div class="comp">${i.componentes.map((c) => escapar(`${fmtNum(c.cantidad * i.cantidad)} ${c.unidad === 'un' ? '×' : c.unidad} ${c.nombre}`)).join('<br>')}</div>`
       : ''
     if (formato === 'ticket') {
       const lineaDesc = desc > 0
-        ? `<tr class="desc"><td></td><td>Desc. ${venta.descuentoPct}%</td><td class="num">−${dinero(desc)}</td></tr>` : ''
+        ? `<tr class="desc"><td></td><td>Desc. ${venta.descuentoPct}% · queda ${unitario}</td><td class="num">−${dinero(desc)}</td></tr>` : ''
       return `<tr><td class="cant">${escapar(cantidadTexto(i))}</td><td>${escapar(i.nombre)}${comp}</td><td class="num">${dinero(subtotal(i))}</td></tr>${lineaDesc}`
     }
     return `<tr><td>${i.codigo ? `${i.codigo}` : ''}</td><td>${escapar(i.nombre)}${comp}</td>
       <td class="num">${fmtNum(i.cantidad)} ${escapar(i.unidad)}</td><td class="num">${dinero(i.precio)}</td>
-      ${descuentos ? `<td class="num">${desc > 0 ? `−${dinero(desc)}` : ''}</td>` : ''}<td class="num">${dinero(subtotal(i) - desc)}</td></tr>`
+      ${descuentos ? `<td class="num">${desc > 0 ? `−${dinero(desc)}<div class="unitario">${unitario}</div>` : ''}</td>` : ''}<td class="num">${dinero(subtotal(i) - desc)}</td></tr>`
   }).join('')
 }
 
