@@ -10,6 +10,7 @@ export const SECCIONES = [
   { ruta: '/merma', permisos: ['mermas.ver'] },
   { ruta: '/productos', permisos: ['productos.ver_costos'] },
   { ruta: '/promos', permisos: ['promos.gestionar', 'estadisticas.ver'] },
+  { ruta: '/clientes', permisos: ['clientes.ver'] },
   { ruta: '/proveedores', permisos: ['proveedores.ver'] },
   { ruta: '/estadisticas', permisos: ['estadisticas.ver'] },
   { ruta: '/reportes', permisos: ['reportes.descargar'] },

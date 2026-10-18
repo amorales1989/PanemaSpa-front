@@ -6,9 +6,10 @@ import { useDialogo } from '../Dialogo'
 // Una lista configurable (canales, medios de pago, categorías...): agregar, renombrar,
 // activar/desactivar (pausar) y eliminar. Si lo eliminado ya se usó, el servidor lo archiva:
 // desaparece de acá y de los formularios, y los registros viejos lo siguen mostrando.
-export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {}, etiqueta, onCambio }) {
+// `conDescuento`: cada opción lleva un % de descuento en ventas (medios de pago)
+export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {}, etiqueta, conDescuento, onCambio }) {
   const [nuevo, setNuevo] = useState('')
-  const [editando, setEditando] = useState(null) // { id, nombre }
+  const [editando, setEditando] = useState(null) // { id, nombre, descuentoPct }
   const [error, setError] = useState('')
   const [ocupado, setOcupado] = useState(false)
   const [nota, setNota] = useState('')
@@ -38,7 +39,8 @@ export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {},
   const renombrar = async (e) => {
     e.preventDefault()
     if (!editando.nombre.trim()) return
-    if (await ejecutar(() => api(`/config/${lista}/${editando.id}`, { metodo: 'PATCH', body: { nombre: editando.nombre.trim() } }))) setEditando(null)
+    const body = { nombre: editando.nombre.trim(), ...(conDescuento && { descuentoPct: Number(String(editando.descuentoPct).replace(',', '.')) || 0 }) }
+    if (await ejecutar(() => api(`/config/${lista}/${editando.id}`, { metodo: 'PATCH', body }))) setEditando(null)
   }
 
   const alternar = (f) => ejecutar(() => api(`/config/${lista}/${f.id}`, { metodo: 'PATCH', body: { activo: !f.activo } }))
@@ -76,13 +78,24 @@ export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {},
               <form className="lista-editar" onSubmit={renombrar}>
                 <input className="input input-sm" autoFocus value={editando.nombre} maxLength={60}
                   onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} aria-label="Nuevo nombre" />
+                {conDescuento && (
+                  <label className="lista-descuento" title="Descuento en ventas pagadas con este medio">
+                    <input className="input input-sm" inputMode="decimal" value={editando.descuentoPct} aria-label="Porcentaje de descuento"
+                      onChange={(e) => setEditando({ ...editando, descuentoPct: e.target.value.replace(/[^\d.,]/g, '') })} />
+                    % dto.
+                  </label>
+                )}
                 <button className="icon-btn" disabled={ocupado} aria-label="Guardar"><Check size={18} /></button>
                 <button type="button" className="icon-btn" onClick={() => setEditando(null)} aria-label="Cancelar"><X size={18} /></button>
               </form>
             ) : (
               <>
-                <span className="lista-nombre">{f.nombre}{etiqueta?.(f)}</span>
-                <button className="icon-btn" onClick={() => setEditando({ id: f.id, nombre: f.nombre })} aria-label={`Renombrar ${f.nombre}`} title="Renombrar">
+                <span className="lista-nombre">
+                  {f.nombre}{etiqueta?.(f)}
+                  {conDescuento && f.descuentoPct > 0 && <span className="badge bien" style={{ marginLeft: 8 }}>−{f.descuentoPct}% en ventas</span>}
+                </span>
+                <button className="icon-btn" onClick={() => setEditando({ id: f.id, nombre: f.nombre, descuentoPct: f.descuentoPct ?? 0 })}
+                  aria-label={`Editar ${f.nombre}`} title={conDescuento ? 'Editar nombre y descuento' : 'Renombrar'}>
                   <Pencil size={15} />
                 </button>
                 <button className="icon-btn icon-peligro" onClick={() => eliminar(f)} aria-label={`Eliminar ${f.nombre}`} title="Eliminar" disabled={ocupado}>

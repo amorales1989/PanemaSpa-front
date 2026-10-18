@@ -23,6 +23,7 @@ const ESTILOS = {
     .num { text-align: right; white-space: nowrap; padding-left: 6px; }
     .cant { white-space: nowrap; padding-right: 6px; }
     .comp { font-size: 10px; padding-left: 10px; }
+    .fila { display: flex; justify-content: space-between; }
     .total { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; }
     .pie, .legal { text-align: center; }
     .legal { font-size: 10px; margin-top: 8px; }
@@ -43,7 +44,9 @@ const ESTILOS = {
     td { padding: 7px 4px; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
     .num { text-align: right; white-space: nowrap; }
     .comp { font-size: 11px; color: #666; }
-    .total { display: flex; justify-content: flex-end; gap: 32px; font-size: 20px; font-weight: 700; margin-top: 14px; }
+    .fila { display: flex; justify-content: flex-end; gap: 32px; margin-top: 8px; color: #444; }
+    .fila + .total, table + .total { margin-top: 14px; }
+    .total { display: flex; justify-content: flex-end; gap: 32px; font-size: 20px; font-weight: 700; margin-top: 6px; }
     .pie { margin-top: 28px; text-align: center; }
     .legal { margin-top: 10px; font-size: 11px; color: #777; text-align: center; }
   `,
@@ -73,8 +76,13 @@ export function htmlComprobante(venta, empresa) {
     ['Fecha', `${fechaTexto(venta.fecha)}${venta.hora ? ` ${venta.hora}` : ''}`],
     ['Canal', venta.categoria],
     ['Pago', venta.metodo],
+    venta.cliente && ['Cliente', `${venta.cliente.nombre}${venta.cliente.documento ? ` (${venta.cliente.documento})` : ''}`],
     venta.usuario && ['Atendió', venta.usuario],
   ].filter(Boolean)
+  // Subtotal y descuento del medio de pago, si hubo
+  const desglose = venta.descuento > 0
+    ? [['Subtotal', dinero(venta.monto + venta.descuento)], [`Descuento ${venta.metodo} (${venta.descuentoPct}%)`, `−${dinero(venta.descuento)}`]]
+    : []
 
   const cabecera = `
     <div class="cabecera">
@@ -90,6 +98,7 @@ export function htmlComprobante(venta, empresa) {
       <div class="sep"></div>
       <table>${lineas(venta, formato)}</table>
       <div class="sep"></div>
+      ${desglose.map(([k, v]) => `<div class="fila"><span>${escapar(k)}</span><span>${v}</span></div>`).join('')}
       <div class="total"><span>TOTAL</span><span>${dinero(venta.monto)}</span></div>
       <div class="sep"></div>`
     : `${cabecera}
@@ -99,6 +108,7 @@ export function htmlComprobante(venta, empresa) {
         <thead><tr><th>Cód.</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th></tr></thead>
         <tbody>${lineas(venta, formato)}</tbody>
       </table>
+      ${desglose.map(([k, v]) => `<div class="fila"><span>${escapar(k)}</span><span>${v}</span></div>`).join('')}
       <div class="total"><span>Total</span><span>${dinero(venta.monto)}</span></div>`
 
   return `<!doctype html><html lang="es"><head><meta charset="utf-8">

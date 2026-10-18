@@ -729,3 +729,34 @@ textarea.input { resize: vertical; font: inherit; }
 .venta-lista p { margin: 4px 0 0; }
 .venta-lista-icono { color: var(--ingreso); }
 .venta-lista-acciones { display: grid; gap: 10px; width: 100%; max-width: 320px; margin-top: 6px; }
+
+/* Cliente de la venta */
+.selector-cliente { position: relative; }
+.search.search-sm { padding: 0 12px; min-height: 40px; }
+.search.search-sm input { font-size: 14px; }
+.selector-cliente-lista {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); list-style: none; margin: 0; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(59, 42, 32, 0.12);
+  max-height: 260px; overflow-y: auto;
+}
+.selector-cliente-lista li { display: grid; gap: 1px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.selector-cliente-lista li.activo { background: var(--surface-2); }
+.selector-cliente-lista .sub { font-size: 12px; }
+.selector-cliente-nuevo { display: flex !important; align-items: center; gap: 6px; color: var(--ingreso); font-weight: 600; }
+.cliente-elegido { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px; border: 1px solid var(--ingreso); background: var(--ingreso-soft); border-radius: 12px; }
+.cliente-elegido > div { flex: 1; min-width: 0; display: grid; }
+.cliente-elegido strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cliente-elegido .sub { font-size: 12px; }
+.cliente-nuevo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; }
+.cliente-nuevo > :first-child, .cliente-nuevo > .alerta-error, .cliente-nuevo > .acciones-form { grid-column: 1 / -1; }
+
+/* Descuento por medio de pago */
+.chip-descuento { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--ingreso); }
+.chip.on .chip-descuento { color: inherit; opacity: 0.9; }
+.desglose-total { display: grid; gap: 4px; padding: 0 16px; font-size: 14px; color: var(--muted); }
+.desglose-total > div { display: flex; justify-content: space-between; gap: 12px; }
+.desglose-total .descuento { color: var(--ingreso); font-weight: 600; }
+.lista-descuento { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.lista-descuento input { width: 56px; text-align: right; }
+
+.ficha-subtitulo { font-size: 15px; font-weight: 600; margin: 20px 0 8px; }

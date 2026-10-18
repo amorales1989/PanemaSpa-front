@@ -24,6 +24,7 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
     tipo !== 'mermas' && [t.etiquetaCategoria, r.categoria],
     r.proveedor && ['Proveedor', r.proveedor],
     !r.items && ['Detalle', r.descripcion],
+    r.cliente && ['Cliente', `${r.cliente.nombre}${r.cliente.documento ? ` · ${r.cliente.documento}` : ''}`],
     r.metodo && ['Medio de pago', r.metodo],
     r.motivo && ['Motivo', r.motivo],
     r.usuario && ['Registró', r.usuario],
@@ -65,7 +66,13 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
         </table>
       )}
 
-      <div className="total-ticket" style={{ background: t.suave, marginTop: 16 }}>
+      {r.descuento > 0 && (
+        <div className="desglose-total" style={{ marginTop: 16 }}>
+          <div><span>Subtotal</span><span>{dinero(r.monto + r.descuento)}</span></div>
+          <div className="descuento"><span>Descuento {r.metodo} ({r.descuentoPct}%)</span><span>−{dinero(r.descuento)}</span></div>
+        </div>
+      )}
+      <div className="total-ticket" style={{ background: t.suave, marginTop: r.descuento > 0 ? 8 : 16 }}>
         <span>Total</span><strong>{dinero(r.monto)}</strong>
       </div>
       {tipo === 'ingresos' && empresa?.comprobanteActivo && (

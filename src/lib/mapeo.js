@@ -47,6 +47,9 @@ const lineaDesdeApi = (i) => ({
 export const ventaDesdeApi = (v, zonaHoraria) => ({
   id: v.id, numero: v.numero, fecha: v.fecha, hora: horaLocal(v.ocurridoEn, zonaHoraria),
   categoria: v.canal, metodo: v.metodoPago, items: v.items.map(lineaDesdeApi), monto: v.total,
+  // monto = subtotal - descuento (descuento del medio de pago)
+  descuento: v.descuento ?? 0, descuentoPct: v.descuentoPct ?? 0,
+  cliente: v.clienteId ? { id: v.clienteId, nombre: v.cliente, documento: v.clienteDocumento } : null,
   usuario: v.usuario, usuarioId: v.usuarioId,
 })
 
@@ -77,6 +80,7 @@ export function ventaHaciaApi(item, config, hoyIso, puedeCambiarPrecio) {
     canalId: idPorNombre(config.canales, item.categoria, 'el canal'),
     metodoPagoId: idPorNombre(config.metodosPago, item.metodo, 'el medio de pago'),
     ...(item.fecha !== hoyIso && { fecha: item.fecha }),
+    ...(item.cliente && { clienteId: item.cliente.id }),
     items: item.items.map((i) => ({
       ...(i.tipo === 'promo' ? { promoId: i.id } : { productoId: i.id }),
       cantidad: i.cantidad,

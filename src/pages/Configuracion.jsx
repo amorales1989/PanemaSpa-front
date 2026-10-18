@@ -208,7 +208,8 @@ function Listas() {
       {generales && (
         <>
           <ListaEditable titulo="Canales de venta" ayuda="Por dónde entra cada venta" lista="canales" filas={config.canales} onCambio={recargarConfig} />
-          <ListaEditable titulo="Medios de pago" lista="metodos-pago" filas={config.metodosPago} onCambio={recargarConfig} />
+          <ListaEditable titulo="Medios de pago" ayuda="Con el lápiz puedes darle un % de descuento en ventas (ej. transferencia)"
+            lista="metodos-pago" filas={config.metodosPago} conDescuento onCambio={recargarConfig} />
           <ListaEditable titulo="Categorías de productos" lista="categorias" extra={{ ambito: 'producto' }} filas={config.categorias.producto} onCambio={recargarConfig} />
           <ListaEditable titulo="Categorías de insumos" lista="categorias" extra={{ ambito: 'insumo' }} filas={config.categorias.insumo} onCambio={recargarConfig} />
           <ListaEditable titulo="Categorías de egresos" ayuda="Sueldos, arriendo, servicios…" lista="categorias" extra={{ ambito: 'egreso' }}

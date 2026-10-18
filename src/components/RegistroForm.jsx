@@ -5,12 +5,13 @@ import { TIPOS, categoriasDe } from '../lib/tipos'
 import { dinero, isoLocal } from '../lib/format'
 import { num, totalItems } from '../lib/items'
 import { Catalogo, Ticket, sumarAlTicket } from './Items'
+import SelectorCliente from './SelectorCliente'
 
-function Chips({ opciones, valor, onChange }) {
+function Chips({ opciones, valor, onChange, etiqueta }) {
   return (
     <div className="chips">
       {opciones.map((o) => (
-        <button type="button" key={o} className={`chip ${valor === o ? 'on' : ''}`} onClick={() => onChange(o)}>{o}</button>
+        <button type="button" key={o} className={`chip ${valor === o ? 'on' : ''}`} onClick={() => onChange(o)}>{o}{etiqueta?.(o)}</button>
       ))}
     </div>
   )
@@ -22,7 +23,7 @@ const ahora = () => {
 }
 
 export default function RegistroForm({ tipo, onDone }) {
-  const { agregar, hoy, catalogo, listas, puede } = useDatos()
+  const { agregar, hoy, catalogo, listas, config, puede } = useDatos()
   const t = TIPOS[tipo]
   const categorias = categoriasDe(tipo, listas)
   const metodoInicial = tipo === 'egresos' ? 'Transferencia' : 'Efectivo'
@@ -33,6 +34,7 @@ export default function RegistroForm({ tipo, onDone }) {
   const [fecha, setFecha] = useState(isoLocal(hoy))
   const [proveedor, setProveedor] = useState('')
   const [motivo, setMotivo] = useState(listas.motivosMerma[0])
+  const [cliente, setCliente] = useState(null)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   // Egresos sin ítems (sueldos, arriendo...)
@@ -40,7 +42,12 @@ export default function RegistroForm({ tipo, onDone }) {
   const [descripcion, setDescripcion] = useState('')
 
   const conItems = tipo !== 'egresos' || listas.egresosConItems.includes(categoria)
-  const total = conItems ? totalItems(items) : parseInt(monto) || 0
+  // Ventas: descuento según el medio de pago (el servidor lo vuelve a calcular al guardar)
+  const pctDe = (nombre) => (tipo === 'ingresos' ? config.metodosPago.find((m) => m.nombre === nombre)?.descuentoPct ?? 0 : 0)
+  const descuentoPct = pctDe(metodo)
+  const subtotalVenta = conItems ? totalItems(items) : parseInt(monto) || 0
+  const descuento = Math.round((subtotalVenta * descuentoPct) / 100)
+  const total = subtotalVenta - descuento
   // La merma la valoriza el servidor (quien no ve costos ve $0): basta con tener ítems
   const valido = !guardando && (tipo === 'mermas' ? items.some((i) => num(i.cantidad) > 0) : total > 0)
 
@@ -61,7 +68,7 @@ export default function RegistroForm({ tipo, onDone }) {
     setError('')
     try {
       let venta
-      if (tipo === 'ingresos') venta = await agregar('ingresos', { fecha, hora: ahora(), categoria, metodo, items: lineas, monto: total })
+      if (tipo === 'ingresos') venta = await agregar('ingresos', { fecha, hora: ahora(), categoria, metodo, cliente, items: lineas, monto: total })
       else if (tipo === 'mermas') await agregar('mermas', { fecha, motivo, items: lineas, monto: total })
       else if (conItems) await agregar('egresos', { fecha, categoria, descripcion: proveedor.trim() || 'Compra de insumos', proveedor: proveedor.trim(), metodo, items: lineas, monto: total })
       else await agregar('egresos', { fecha, categoria, descripcion: descripcion.trim() || categoria, metodo, monto: total })
@@ -119,6 +126,12 @@ export default function RegistroForm({ tipo, onDone }) {
               etiquetaPrecio={tipo === 'mermas' ? 'costo c/u' : 'c/u'}
               vacio={tipo === 'ingresos' ? 'Toca un producto o escribe su código para agregarlo' : 'Agrega lo que corresponda tocando o escribiendo el código'}
             />
+            {descuento > 0 && (
+              <div className="desglose-total">
+                <div><span>Subtotal</span><span>{dinero(subtotalVenta)}</span></div>
+                <div className="descuento"><span>Descuento {metodo} ({descuentoPct}%)</span><span>−{dinero(descuento)}</span></div>
+              </div>
+            )}
             <div className="total-ticket" style={{ background: t.suave }}>
               <span>{tipo === 'mermas' ? 'Pérdida total' : 'Total'}</span>
               <strong>{dinero(total)}</strong>
@@ -126,8 +139,13 @@ export default function RegistroForm({ tipo, onDone }) {
 
             {tipo === 'ingresos' && (
               <>
+                {puede('clientes.ver') && <div className="campo"><label>Cliente</label><SelectorCliente valor={cliente} onChange={setCliente} /></div>}
                 <div className="campo"><label>Canal</label><Chips opciones={categorias} valor={categoria} onChange={setCategoria} /></div>
-                <div className="campo"><label>Medio de pago</label><Chips opciones={listas.metodosPago} valor={metodo} onChange={setMetodo} /></div>
+                <div className="campo">
+                  <label>Medio de pago</label>
+                  <Chips opciones={listas.metodosPago} valor={metodo} onChange={setMetodo}
+                    etiqueta={(m) => pctDe(m) > 0 && <span className="chip-descuento">−{pctDe(m)}%</span>} />
+                </div>
               </>
             )}
             {tipo === 'egresos' && (

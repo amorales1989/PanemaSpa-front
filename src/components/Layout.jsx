@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText, ShieldCheck, KeyRound, LogOut, LogIn, CircleUser, Settings, Truck } from 'lucide-react'
+import { Home, TrendingUp, TrendingDown, PackageX, BarChart3, Plus, CheckCircle2, ShoppingBag, Package, BadgePercent, LayoutGrid, Check, FileText, ShieldCheck, KeyRound, LogOut, LogIn, CircleUser, Settings, Truck, Users } from 'lucide-react'
 import Registrar from './Registrar'
 import DetalleRegistro from './DetalleRegistro'
 import CambiarPassword from './CambiarPassword'
@@ -17,6 +17,7 @@ const NAV = [
   { to: '/merma', label: 'Merma', Icono: PackageX },
   { to: '/productos', label: 'Productos', Icono: Package },
   { to: '/promos', label: 'Promos', Icono: BadgePercent },
+  { to: '/clientes', label: 'Clientes', Icono: Users },
   { to: '/proveedores', label: 'Proveedores', Icono: Truck },
   { to: '/estadisticas', label: 'Estadísticas', Icono: BarChart3 },
   { to: '/reportes', label: 'Reportes', Icono: FileText },
