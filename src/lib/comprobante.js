@@ -4,6 +4,7 @@
 import { urlArchivo } from './api'
 import { dinero } from './format'
 import { cantidadTexto, fmtNum, subtotal } from './items'
+import { paisDe } from './paises'
 
 const escapar = (t) =>
   String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -29,8 +30,9 @@ const ESTILOS = {
     .legal { font-size: 10px; margin-top: 8px; }
   `,
   carta: `
-    @page { size: A4; margin: 16mm; }
-    body { margin: 0; font: 13px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1d1d1d; }
+    /* Margen 0: el navegador no agrega encabezado ni pie (fecha, título, URL). El margen va por dentro. */
+    @page { size: A4; margin: 0; }
+    body { margin: 0; padding: 16mm; font: 13px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1d1d1d; }
     .cabecera { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #1d1d1d; }
     .logo { max-width: 70px; max-height: 70px; }
     h1 { font-size: 22px; margin: 0 0 2px; }
@@ -69,7 +71,7 @@ function lineas(venta, formato) {
 export function htmlComprobante(venta, empresa) {
   const formato = empresa.comprobanteFormato === 'carta' ? 'carta' : 'ticket'
   const logo = empresa.logoUrl ? new URL(urlArchivo(empresa.logoUrl), window.location.origin).href : null
-  const contacto = [empresa.razonSocial, empresa.rut && `RUT ${empresa.rut}`, empresa.direccion, empresa.telefono && `Tel. ${empresa.telefono}`]
+  const contacto = [empresa.razonSocial, empresa.rut && `${paisDe(empresa.pais).idFiscal} ${empresa.rut}`, empresa.direccion, empresa.telefono && `Tel. ${empresa.telefono}`]
     .filter(Boolean).map(escapar)
   const numero = String(venta.numero ?? '').padStart(6, '0')
   const datos = [

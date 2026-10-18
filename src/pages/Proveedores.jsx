@@ -2,40 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Copy, Landmark, Mail, MessageCircle, Pencil, Phone, Plus, Search, Star, Trash2, Truck } from 'lucide-react'
 import { api } from '../lib/api'
 import { copiar } from '../lib/copiar'
-import { normalizarRut } from '../lib/rut'
+import { normalizarIdFiscal, numeroWhatsapp, usePais } from '../lib/paises'
 import { dinero, etiquetaDia } from '../lib/format'
 import { useDatos } from '../context/DataContext'
 import Modal from '../components/Modal'
 import { useDialogo } from '../components/Dialogo'
 
-const TIPOS_CUENTA = { corriente: 'Cuenta corriente', vista: 'Cuenta vista', rut: 'CuentaRUT', ahorro: 'Cuenta de ahorro' }
-// Sugerencias del campo Banco (se puede escribir cualquier otro)
-const BANCOS = [
-  // Bancos
-  'Banco de Chile', 'BancoEstado', 'Santander', 'BCI', 'Scotiabank', 'Itaú', 'BICE', 'Security', 'Banco Falabella',
-  'Banco Ripley', 'Consorcio', 'Banco Internacional', 'BTG Pactual', 'HSBC',
-  // Cooperativas y cajas
-  'Coopeuch', 'Oriencoop', 'Ahorrocoop', 'Detacoop', 'Tapp (Caja Los Andes)',
-  // Cuentas digitales y prepago
-  'Mercado Pago', 'MACH', 'Tenpo', 'Superdigital', 'Copec Pay', 'Global66', 'Prex', 'Prepago Los Héroes',
-]
-
 // Texto listo para pegar en la app del banco
-const datosTransferencia = (c) => [
+const datosTransferencia = (c, pais) => [
   `Nombre: ${c.titular}`,
-  c.rutTitular && `RUT: ${c.rutTitular}`,
+  c.rutTitular && `${pais.idFiscal}: ${c.rutTitular}`,
   `Banco: ${c.banco}`,
-  `Tipo de cuenta: ${TIPOS_CUENTA[c.tipoCuenta]}`,
-  `N° de cuenta: ${c.numero}`,
+  `Tipo de cuenta: ${pais.tiposCuenta[c.tipoCuenta] ?? c.tipoCuenta}`,
+  c.numero && `${pais.numeroCuenta}: ${c.numero}`,
+  c.alias && `Alias: ${c.alias}`,
   c.email && `Email: ${c.email}`,
 ].filter(Boolean).join('\n')
 
 const soloDigitos = (t) => String(t ?? '').replace(/\D/g, '')
-// WhatsApp: números chilenos de 9 dígitos sin el 56 adelante
-const whatsapp = (tel) => {
-  const d = soloDigitos(tel)
-  return d.length === 9 ? `56${d}` : d
-}
 
 function BotonCopiar({ texto, etiqueta, onCopiado, grande }) {
   const [hecho, setHecho] = useState(false)
@@ -73,12 +57,13 @@ function Dato({ etiqueta, valor, onCopiado, href }) {
 }
 
 function Cuenta({ c, gestiona, onEditar, onEliminar, onCopiado }) {
+  const pais = usePais()
   return (
     <div className={`cuenta-banco ${c.principal ? 'principal' : ''}`}>
       <div className="cuenta-banco-head">
         <Landmark size={16} />
         <strong>{c.banco}</strong>
-        <span className="sub">· {TIPOS_CUENTA[c.tipoCuenta]}</span>
+        <span className="sub">· {pais.tiposCuenta[c.tipoCuenta] ?? c.tipoCuenta}</span>
         {c.principal && <span className="badge bien"><Star size={11} /> Principal</span>}
         {gestiona && (
           <span className="cuenta-banco-acciones">
@@ -87,16 +72,18 @@ function Cuenta({ c, gestiona, onEditar, onEliminar, onCopiado }) {
           </span>
         )}
       </div>
-      <Dato etiqueta="N° de cuenta" valor={c.numero} onCopiado={onCopiado} />
+      <Dato etiqueta={pais.numeroCuenta} valor={c.numero} onCopiado={onCopiado} />
+      <Dato etiqueta="Alias" valor={c.alias} onCopiado={onCopiado} />
       <Dato etiqueta="Titular" valor={c.titular} onCopiado={onCopiado} />
-      <Dato etiqueta="RUT" valor={c.rutTitular} onCopiado={onCopiado} />
+      <Dato etiqueta={pais.idFiscal} valor={c.rutTitular} onCopiado={onCopiado} />
       <Dato etiqueta="Email" valor={c.email} onCopiado={onCopiado} />
-      <BotonCopiar texto={datosTransferencia(c)} etiqueta="datos para transferir" onCopiado={onCopiado} grande />
+      <BotonCopiar texto={datosTransferencia(c, pais)} etiqueta="datos para transferir" onCopiado={onCopiado} grande />
     </div>
   )
 }
 
 function Formulario({ titulo, campos, inicial, onGuardar, onClose }) {
+  const pais = usePais()
   const [form, setForm] = useState(inicial)
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -104,9 +91,9 @@ function Formulario({ titulo, campos, inicial, onGuardar, onClose }) {
 
   const enviar = async (e) => {
     e.preventDefault()
-    // RUT: aviso inmediato si el dígito verificador no calza
+    // RUT / CUIT: aviso inmediato si el dígito verificador no calza
     for (const c of campos) {
-      if (c.rut && form[c.id] && !normalizarRut(form[c.id])) return setError(`${c.label} inválido: revisa el dígito verificador`)
+      if (c.rut && form[c.id] && !normalizarIdFiscal(pais.codigo, form[c.id])) return setError(`${c.label} inválido: revisa el dígito verificador`)
     }
     setEnviando(true)
     setError('')
@@ -124,7 +111,7 @@ function Formulario({ titulo, campos, inicial, onGuardar, onClose }) {
       <form className="form" onSubmit={enviar}>
         {campos.map((c) => (
           <div className="campo" key={c.id}>
-            <label htmlFor={`f-${c.id}`}>{c.label}{!c.requerido && c.tipo !== 'interruptor' && <span style={{ fontWeight: 400 }}> (opcional)</span>}</label>
+            <label htmlFor={`f-${c.id}`}>{c.label}{!c.requerido && c.tipo !== 'interruptor' && <span style={{ fontWeight: 400 }}> {c.opcional ?? '(opcional)'}</span>}</label>
             {c.tipo === 'chips' ? (
               <div className="chips">
                 {Object.entries(c.opciones).map(([v, t]) => (
@@ -138,11 +125,11 @@ function Formulario({ titulo, campos, inicial, onGuardar, onClose }) {
             ) : (
               <input id={`f-${c.id}`} className="input" required={c.requerido} list={c.lista} type={c.tipo ?? 'text'} inputMode={c.inputMode}
                 placeholder={c.placeholder} value={form[c.id] ?? ''} onChange={(e) => set(c.id, e.target.value)}
-                onBlur={c.rut ? () => normalizarRut(form[c.id]) && set(c.id, normalizarRut(form[c.id])) : undefined} />
+                onBlur={c.rut ? () => normalizarIdFiscal(pais.codigo, form[c.id]) && set(c.id, normalizarIdFiscal(pais.codigo, form[c.id])) : undefined} />
             )}
           </div>
         ))}
-        <datalist id="bancos">{BANCOS.map((b) => <option key={b} value={b} />)}</datalist>
+        <datalist id="bancos">{pais.bancos.map((b) => <option key={b} value={b} />)}</datalist>
         {error && <div className="alerta-error" role="alert">{error}</div>}
         <button className="btn btn-primary" disabled={enviando}><Check size={18} /> {enviando ? 'Guardando…' : 'Guardar'}</button>
       </form>
@@ -150,22 +137,24 @@ function Formulario({ titulo, campos, inicial, onGuardar, onClose }) {
   )
 }
 
-const CAMPOS_PROVEEDOR = [
-  { id: 'nombre', label: 'Nombre', requerido: true, placeholder: 'Ej: Molinera del Sur' },
-  { id: 'rut', label: 'RUT', rut: true, placeholder: '76.123.456-7' },
+const camposProveedor = (pais) => [
+  { id: 'nombre', label: 'Nombre', requerido: true, placeholder: 'Ej: Distribuidora del Sur' },
+  { id: 'rut', label: pais.idFiscal, rut: true, placeholder: pais.idFiscalEjemplo },
   { id: 'contacto', label: 'Persona de contacto', placeholder: 'Ej: Pedro (vendedor)' },
-  { id: 'telefono', label: 'Teléfono', tipo: 'tel', placeholder: '+56 9 1234 5678' },
+  { id: 'telefono', label: 'Teléfono', tipo: 'tel', placeholder: pais.telefonoEjemplo },
   { id: 'email', label: 'Email', tipo: 'email' },
   { id: 'direccion', label: 'Dirección' },
   { id: 'notas', label: 'Notas', tipo: 'area', placeholder: 'Días de entrega, pedido mínimo, condiciones de pago…' },
   { id: 'activo', label: 'Activo', tipo: 'interruptor' },
 ]
-const CAMPOS_CUENTA = [
-  { id: 'banco', label: 'Banco', requerido: true, lista: 'bancos', placeholder: 'Elige de la lista o escribe otro' },
-  { id: 'tipoCuenta', label: 'Tipo de cuenta', requerido: true, tipo: 'chips', opciones: TIPOS_CUENTA },
-  { id: 'numero', label: 'Número de cuenta', requerido: true, inputMode: 'numeric' },
+// Argentina: CBU/CVU y/o alias (basta uno). Chile: número de cuenta.
+const camposCuenta = (pais) => [
+  { id: 'banco', label: pais.conAlias ? 'Banco o billetera' : 'Banco', requerido: true, lista: 'bancos', placeholder: 'Elige de la lista o escribe otro' },
+  { id: 'tipoCuenta', label: 'Tipo de cuenta', requerido: true, tipo: 'chips', opciones: pais.tiposCuenta },
+  { id: 'numero', label: pais.numeroCuenta, requerido: !pais.conAlias, inputMode: 'numeric', placeholder: pais.numeroCuentaEjemplo, opcional: '(o el alias)' },
+  ...(pais.conAlias ? [{ id: 'alias', label: 'Alias', placeholder: 'Ej: calabazas.sur.mp', opcional: '(o el CBU/CVU)' }] : []),
   { id: 'titular', label: 'Titular', requerido: true, placeholder: 'Nombre o razón social' },
-  { id: 'rutTitular', label: 'RUT del titular', rut: true },
+  { id: 'rutTitular', label: `${pais.idFiscal}${pais.conAlias ? '/CUIL' : ''} del titular`, rut: true, placeholder: pais.idFiscalEjemplo },
   { id: 'email', label: 'Email para el aviso de transferencia', tipo: 'email' },
   { id: 'principal', label: 'Cuenta principal', tipo: 'interruptor' },
 ]
@@ -176,6 +165,7 @@ const limpiar = (form) => Object.fromEntries(Object.entries(form).map(([k, v]) =
 export default function Proveedores() {
   const { puede, hoy, recargarConfig } = useDatos()
   const { confirmar } = useDialogo()
+  const pais = usePais()
   const gestiona = puede('proveedores.gestionar')
   const [proveedores, setProveedores] = useState(null)
   const [busqueda, setBusqueda] = useState('')
@@ -193,7 +183,7 @@ export default function Proveedores() {
     const q = busqueda.trim().toLowerCase()
     if (!proveedores) return []
     if (!q) return proveedores
-    return proveedores.filter((p) => [p.nombre, p.rut, p.contacto, p.email, ...p.cuentas.flatMap((c) => [c.banco, c.titular, c.numero])]
+    return proveedores.filter((p) => [p.nombre, p.rut, p.contacto, p.email, ...p.cuentas.flatMap((c) => [c.banco, c.titular, c.numero, c.alias])]
       .some((v) => v?.toLowerCase().includes(q)))
   }, [proveedores, busqueda])
 
@@ -247,7 +237,7 @@ export default function Proveedores() {
       <div className="toolbar">
         <label className="search">
           <Search size={18} />
-          <input placeholder="Buscar por nombre, RUT, banco o número de cuenta" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+          <input placeholder={`Buscar por nombre, ${pais.idFiscal}, banco o ${pais.conAlias ? 'alias' : 'número de cuenta'}`} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
         </label>
       </div>
 
@@ -271,7 +261,7 @@ export default function Proveedores() {
               </div>
 
               <div className="proveedor-datos">
-                <Dato etiqueta="RUT" valor={p.rut} onCopiado={copiado} />
+                <Dato etiqueta={pais.idFiscal} valor={p.rut} onCopiado={copiado} />
                 <Dato etiqueta="Teléfono" valor={p.telefono} href={p.telefono ? `tel:${soloDigitos(p.telefono)}` : undefined} onCopiado={copiado} />
                 <Dato etiqueta="Email" valor={p.email} href={p.email ? `mailto:${p.email}` : undefined} onCopiado={copiado} />
                 <Dato etiqueta="Dirección" valor={p.direccion} onCopiado={copiado} />
@@ -280,7 +270,7 @@ export default function Proveedores() {
               {(p.telefono || p.email) && (
                 <div className="proveedor-contacto">
                   {p.telefono && <a className="btn btn-ghost btn-sm" href={`tel:${soloDigitos(p.telefono)}`}><Phone size={15} /> Llamar</a>}
-                  {p.telefono && <a className="btn btn-ghost btn-sm" href={`https://wa.me/${whatsapp(p.telefono)}`} target="_blank" rel="noreferrer"><MessageCircle size={15} /> WhatsApp</a>}
+                  {p.telefono && <a className="btn btn-ghost btn-sm" href={`https://wa.me/${numeroWhatsapp(p.telefono, pais.codigo)}`} target="_blank" rel="noreferrer"><MessageCircle size={15} /> WhatsApp</a>}
                   {p.email && <a className="btn btn-ghost btn-sm" href={`mailto:${p.email}`}><Mail size={15} /> Email</a>}
                 </div>
               )}
@@ -307,12 +297,12 @@ export default function Proveedores() {
       )}
 
       {modal?.tipo === 'proveedor' && (
-        <Formulario titulo={modal.proveedor ? 'Editar proveedor' : 'Nuevo proveedor'} campos={CAMPOS_PROVEEDOR}
+        <Formulario titulo={modal.proveedor ? 'Editar proveedor' : 'Nuevo proveedor'} campos={camposProveedor(pais)}
           inicial={modal.proveedor ?? { activo: true }} onGuardar={guardarProveedor} onClose={() => setModal(null)} />
       )}
       {modal?.tipo === 'cuenta' && (
-        <Formulario titulo={`${modal.cuenta ? 'Editar' : 'Nueva'} cuenta · ${modal.proveedor.nombre}`} campos={CAMPOS_CUENTA}
-          inicial={modal.cuenta ?? { tipoCuenta: 'corriente', titular: modal.proveedor.nombre, rutTitular: modal.proveedor.rut ?? '', email: modal.proveedor.email ?? '', principal: !modal.proveedor.cuentas.length }}
+        <Formulario titulo={`${modal.cuenta ? 'Editar' : 'Nueva'} cuenta · ${modal.proveedor.nombre}`} campos={camposCuenta(pais)}
+          inicial={modal.cuenta ?? { tipoCuenta: pais.tipoCuentaInicial, titular: modal.proveedor.nombre, rutTitular: modal.proveedor.rut ?? '', email: modal.proveedor.email ?? '', principal: !modal.proveedor.cuentas.length }}
           onGuardar={guardarCuenta} onClose={() => setModal(null)} />
       )}
       {aviso && <div className="toast"><Check size={18} color="#7fd1a8" />{aviso}</div>}

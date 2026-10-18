@@ -751,8 +751,6 @@ textarea.input { resize: vertical; font: inherit; }
 .cliente-nuevo > :first-child, .cliente-nuevo > .alerta-error, .cliente-nuevo > .acciones-form { grid-column: 1 / -1; }
 
 /* Descuento por medio de pago */
-.chip-descuento { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--ingreso); }
-.chip.on .chip-descuento { color: inherit; opacity: 0.9; }
 .desglose-total { display: grid; gap: 4px; padding: 0 16px; font-size: 14px; color: var(--muted); }
 .desglose-total > div { display: flex; justify-content: space-between; gap: 12px; }
 .desglose-total .descuento { color: var(--ingreso); font-weight: 600; }
@@ -764,3 +762,7 @@ textarea.input { resize: vertical; font: inherit; }
 .lista-editar .lista-descuento .input { flex: none; width: 64px; min-width: 0; text-align: right; }
 
 .ficha-subtitulo { font-size: 15px; font-weight: 600; margin: 20px 0 8px; }
+
+.campos-venta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.campos-venta > * { min-width: 0; }
+.campos-venta select.input { font-size: 15px; padding-left: 12px; padding-right: 28px; text-overflow: ellipsis; }

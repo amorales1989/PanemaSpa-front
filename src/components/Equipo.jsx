@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { haceCuanto } from '../pages/admin/adminFormato'
 
 // Contraseña temporal: se muestra una sola vez para entregarla a la persona
-function ClaveTemporal({ titulo, email, clave, onClose }) {
+export function ClaveTemporal({ titulo, email, clave, onClose }) {
   const [copiada, setCopiada] = useState(false)
   const copiar = async () => {
     try {

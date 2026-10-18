@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, CircleUser, Search, UserPlus, X } from 'lucide-react'
 import { api } from '../lib/api'
+import { usePais } from '../lib/paises'
 
 const mensajeDe = (e) => Object.values(e.detalles ?? {})[0]?.[0] ?? e.message
 
 // Cliente de la venta (opcional): busca por nombre, documento, teléfono o email, o da de alta uno nuevo.
 // Va dentro del formulario de la venta: Enter elige o guarda acá, nunca finaliza la venta.
 export default function SelectorCliente({ valor, onChange }) {
+  const pais = usePais()
   const [texto, setTexto] = useState('')
   const [abierto, setAbierto] = useState(false)
   const [resultados, setResultados] = useState([])
@@ -102,8 +104,8 @@ export default function SelectorCliente({ valor, onChange }) {
     return (
       <div className="cliente-nuevo">
         {campo('nombre', 'Nombre', { autoFocus: !nuevo.nombre, maxLength: 100 })}
-        {campo('documento', 'RUT / DNI', { maxLength: 30, autoFocus: !!nuevo.nombre })}
-        {campo('telefono', 'Teléfono', { type: 'tel', maxLength: 30 })}
+        {campo('documento', pais.documento, { maxLength: 30, autoFocus: !!nuevo.nombre })}
+        {campo('telefono', `Teléfono (${pais.telefonoEjemplo})`, { type: 'tel', maxLength: 30 })}
         {campo('email', 'Email', { type: 'email', maxLength: 200 })}
         {error && <div className="alerta-error" role="alert">{error}</div>}
         <div className="acciones-form">
@@ -120,7 +122,7 @@ export default function SelectorCliente({ valor, onChange }) {
     <div className="selector-cliente" ref={caja}>
       <label className="search search-sm">
         <Search size={16} />
-        <input placeholder="Buscar por nombre, RUT/DNI o teléfono (opcional)" value={texto} aria-label="Cliente"
+        <input placeholder="Buscar cliente (opcional)" title={`Por nombre, ${pais.documento}, teléfono o email`} value={texto} aria-label="Cliente"
           role="combobox" aria-expanded={abierto} aria-controls="clientes-sugeridos"
           onFocus={() => setAbierto(true)} onChange={(e) => { setTexto(e.target.value); setAbierto(true) }} onKeyDown={teclas} />
       </label>

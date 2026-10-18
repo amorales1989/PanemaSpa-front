@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, CircleAlert, Clock, Search, ShoppingBag, Sparkles, Star, Users } from 'lucide-react'
+import { Building2, CircleAlert, Clock, Plus, Search, ShoppingBag, Sparkles, Star, Users } from 'lucide-react'
 import { api } from '../../lib/api'
 import { dinero } from '../../lib/format'
 import { Kpi } from '../../components/ui'
 import { ESTADO_EMPRESA, ESTADO_SUSCRIPCION, diasHasta, fecha, haceCuanto } from './adminFormato'
 import { NuevaDemo } from './AdminDemo'
+import { NuevaEmpresa } from './AdminEmpresaNueva'
+import { paisDe } from '../../lib/paises'
 
 const FILTROS = [
   { id: '', label: 'Todas' },
@@ -30,6 +32,7 @@ export default function AdminEmpresas() {
   const [estado, setEstado] = useState('')
   const [error, setError] = useState('')
   const [creandoDemo, setCreandoDemo] = useState(false)
+  const [creandoEmpresa, setCreandoEmpresa] = useState(false)
 
   useEffect(() => {
     api('/admin/resumen').then(setResumen).catch((e) => setError(e.message))
@@ -53,7 +56,10 @@ export default function AdminEmpresas() {
           <h1 className="serif">Empresas</h1>
           <p>Negocios registrados en la plataforma</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setCreandoDemo(true)}><Sparkles size={18} /> Nueva demo</button>
+        <div className="acciones-head">
+          <button className="btn btn-registrar" onClick={() => setCreandoDemo(true)}><Sparkles size={18} /> Nueva demo</button>
+          <button className="btn btn-primary" onClick={() => setCreandoEmpresa(true)}><Plus size={18} /> Nueva empresa</button>
+        </div>
       </div>
 
       {error && <div className="alerta-error" role="alert">{error}</div>}
@@ -108,7 +114,7 @@ export default function AdminEmpresas() {
                       <td>
                         <strong>{e.nombre}</strong> {e.fundadora && <span className="badge fundadora"><Star size={11} /> Fundadora</span>}
                         {e.esDemo && <span className="badge demo"><Sparkles size={11} /> Demo</span>}
-                        <div className="sub">{e.duenoEmail ?? 'Sin dueño'} · desde {fecha(e.createdAt)}</div>
+                        <div className="sub">{paisDe(e.pais).nombre} · {e.duenoEmail ?? 'Sin dueño'} · desde {fecha(e.createdAt)}</div>
                       </td>
                       <td>
                         {e.esDemo ? 'Sin plan' : e.plan ?? '—'} {sus && <span className={`badge ${sus.clase}`}>{sus.texto}</span>}
@@ -134,6 +140,7 @@ export default function AdminEmpresas() {
         )}
       </div>
       {creandoDemo && <NuevaDemo onClose={() => setCreandoDemo(false)} />}
+      {creandoEmpresa && <NuevaEmpresa onClose={() => setCreandoEmpresa(false)} />}
     </>
   )
 }

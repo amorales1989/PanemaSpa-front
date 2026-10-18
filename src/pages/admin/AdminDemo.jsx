@@ -5,6 +5,8 @@ import { api } from '../../lib/api'
 import { dinero } from '../../lib/format'
 import { useAuth } from '../../context/AuthContext'
 import Modal from '../../components/Modal'
+import { PAIS_POR_DEFECTO } from '../../lib/paises'
+import { SelectorPais } from './AdminEmpresaNueva'
 
 const PERIODOS = [
   { dias: 90, texto: '3 meses' },
@@ -49,7 +51,7 @@ function useAbrirDemo() {
 
 export function NuevaDemo({ onClose }) {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ nombre: '', catalogo: true, dias: 180, ventasDia: 30 })
+  const [form, setForm] = useState({ nombre: '', pais: PAIS_POR_DEFECTO, catalogo: true, dias: 180, ventasDia: 30 })
   const [creando, setCreando] = useState(false)
   const [error, setError] = useState('')
 
@@ -58,7 +60,7 @@ export function NuevaDemo({ onClose }) {
     setCreando(true)
     setError('')
     try {
-      const r = await api('/admin/demos', { metodo: 'POST', body: { nombre: form.nombre, catalogo: form.catalogo, ...cuerpoGeneracion(form) } })
+      const r = await api('/admin/demos', { metodo: 'POST', body: { nombre: form.nombre, pais: form.pais, catalogo: form.catalogo, ...cuerpoGeneracion(form) } })
       navigate(`/admin/empresas/${r.id}`)
     } catch (err) {
       setError(mensajeDe(err))
@@ -75,6 +77,7 @@ export function NuevaDemo({ onClose }) {
           <input id="demo-nombre" className="input" required minLength={2} maxLength={100} autoFocus
             placeholder="Ej: Panadería La Espiga" value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} />
         </div>
+        <SelectorPais id="demo-pais" valor={form.pais} onChange={(pais) => setForm((f) => ({ ...f, pais }))} />
         <label className="fila-switch">
           <button type="button" className={`switch ${form.catalogo ? 'on' : ''}`} role="switch" aria-checked={form.catalogo}
             onClick={() => setForm((f) => ({ ...f, catalogo: !f.catalogo }))}>

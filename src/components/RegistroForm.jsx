@@ -7,11 +7,11 @@ import { num, totalItems } from '../lib/items'
 import { Catalogo, Ticket, sumarAlTicket } from './Items'
 import SelectorCliente from './SelectorCliente'
 
-function Chips({ opciones, valor, onChange, etiqueta }) {
+function Chips({ opciones, valor, onChange }) {
   return (
     <div className="chips">
       {opciones.map((o) => (
-        <button type="button" key={o} className={`chip ${valor === o ? 'on' : ''}`} onClick={() => onChange(o)}>{o}{etiqueta?.(o)}</button>
+        <button type="button" key={o} className={`chip ${valor === o ? 'on' : ''}`} onClick={() => onChange(o)}>{o}</button>
       ))}
     </div>
   )
@@ -140,11 +140,20 @@ export default function RegistroForm({ tipo, onDone }) {
             {tipo === 'ingresos' && (
               <>
                 {puede('clientes.ver') && <div className="campo"><label>Cliente</label><SelectorCliente valor={cliente} onChange={setCliente} /></div>}
-                <div className="campo"><label>Canal</label><Chips opciones={categorias} valor={categoria} onChange={setCategoria} /></div>
-                <div className="campo">
-                  <label>Medio de pago</label>
-                  <Chips opciones={listas.metodosPago} valor={metodo} onChange={setMetodo}
-                    etiqueta={(m) => pctDe(m) > 0 && <span className="chip-descuento">−{pctDe(m)}%</span>} />
+                {/* Lado a lado y en listas: ocupan una sola fila del ticket */}
+                <div className="campos-venta">
+                  <div className="campo">
+                    <label htmlFor="venta-canal">Canal</label>
+                    <select id="venta-canal" className="input" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+                      {categorias.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="campo">
+                    <label htmlFor="venta-metodo">Medio de pago</label>
+                    <select id="venta-metodo" className="input" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+                      {listas.metodosPago.map((m) => <option key={m} value={m}>{m}{pctDe(m) > 0 ? ` (−${pctDe(m)}%)` : ''}</option>)}
+                    </select>
+                  </div>
                 </div>
               </>
             )}

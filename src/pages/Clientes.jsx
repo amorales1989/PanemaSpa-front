@@ -8,28 +8,25 @@ import { useAuth } from '../context/AuthContext'
 import Modal from '../components/Modal'
 import DetalleRegistro from '../components/DetalleRegistro'
 import { useDialogo } from '../components/Dialogo'
+import { numeroWhatsapp, usePais } from '../lib/paises'
 
-const CAMPOS = [
+const camposCliente = (pais) => [
   { id: 'nombre', label: 'Nombre', requerido: true, placeholder: 'Ej: Juana Pérez' },
-  { id: 'documento', label: 'RUT / DNI / CUIT', placeholder: '12.345.678-9' },
-  { id: 'telefono', label: 'Teléfono', tipo: 'tel', placeholder: '+56 9 1234 5678' },
+  { id: 'documento', label: pais.documento, placeholder: pais.documentoEjemplo },
+  { id: 'telefono', label: 'Teléfono', tipo: 'tel', placeholder: pais.telefonoEjemplo },
   { id: 'email', label: 'Email', tipo: 'email' },
   { id: 'direccion', label: 'Dirección' },
   { id: 'notas', label: 'Notas', tipo: 'area', placeholder: 'Preferencias, datos de despacho…' },
 ]
 
 const soloDigitos = (t) => String(t ?? '').replace(/\D/g, '')
-// WhatsApp: números chilenos de 9 dígitos sin el 56 adelante
-const whatsapp = (tel) => {
-  const d = soloDigitos(tel)
-  return d.length === 9 ? `56${d}` : d
-}
 // '' → null en los opcionales (para poder borrarlos al editar)
-const limpiar = (form) => Object.fromEntries(CAMPOS.map(({ id }) => [id, typeof form[id] === 'string' ? (form[id].trim() || null) : (form[id] ?? null)]))
+const limpiar = (form) => Object.fromEntries(Object.entries(form).map(([id, v]) => [id, typeof v === 'string' ? (v.trim() || null) : (v ?? null)]))
 const mensajeDe = (e) => Object.values(e.detalles ?? {})[0]?.[0] ?? e.message
 
 function Formulario({ cliente, onGuardado, onClose }) {
-  const [form, setForm] = useState(() => Object.fromEntries(CAMPOS.map(({ id }) => [id, cliente?.[id] ?? ''])))
+  const campos = camposCliente(usePais())
+  const [form, setForm] = useState(() => Object.fromEntries(campos.map(({ id }) => [id, cliente?.[id] ?? ''])))
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
@@ -49,7 +46,7 @@ function Formulario({ cliente, onGuardado, onClose }) {
   return (
     <Modal titulo={cliente ? 'Editar cliente' : 'Nuevo cliente'} onClose={onClose}>
       <form className="form" onSubmit={enviar}>
-        {CAMPOS.map((c) => (
+        {campos.map((c) => (
           <div className="campo" key={c.id}>
             <label htmlFor={`cli-${c.id}`}>{c.label}{!c.requerido && <span style={{ fontWeight: 400 }}> (opcional)</span>}</label>
             {c.tipo === 'area' ? (
@@ -73,6 +70,7 @@ function Formulario({ cliente, onGuardado, onClose }) {
 function Ficha({ cliente, gestiona, onEditar, onEliminar, onClose }) {
   const { hoy, puede } = useDatos()
   const { empresa } = useAuth()
+  const pais = usePais()
   const [ventas, setVentas] = useState(null)
   const [detalle, setDetalle] = useState(null)
   const veVentas = puede('ventas.ver_todas')
@@ -90,7 +88,7 @@ function Ficha({ cliente, gestiona, onEditar, onEliminar, onClose }) {
     <Modal titulo={cliente.nombre} onClose={onClose}>
       <div className="detalle-datos">
         {[
-          ['Documento', cliente.documento], ['Teléfono', cliente.telefono], ['Email', cliente.email], ['Dirección', cliente.direccion],
+          [pais.documento, cliente.documento], ['Teléfono', cliente.telefono], ['Email', cliente.email], ['Dirección', cliente.direccion],
           ['Compras', `${cliente.compras} · ${dinero(cliente.totalComprado)}`],
           ['Última compra', cliente.ultimaCompra ? etiquetaDia(cliente.ultimaCompra, hoy) : 'Todavía no compra'],
         ].filter(([, v]) => v).map(([k, v]) => <div key={k}><span>{k}</span><strong>{v}</strong></div>)}
@@ -99,7 +97,7 @@ function Ficha({ cliente, gestiona, onEditar, onEliminar, onClose }) {
       {(cliente.telefono || cliente.email) && (
         <div className="proveedor-contacto" style={{ marginTop: 12 }}>
           {cliente.telefono && <a className="btn btn-ghost btn-sm" href={`tel:${soloDigitos(cliente.telefono)}`}><Phone size={15} /> Llamar</a>}
-          {cliente.telefono && <a className="btn btn-ghost btn-sm" href={`https://wa.me/${whatsapp(cliente.telefono)}`} target="_blank" rel="noreferrer"><MessageCircle size={15} /> WhatsApp</a>}
+          {cliente.telefono && <a className="btn btn-ghost btn-sm" href={`https://wa.me/${numeroWhatsapp(cliente.telefono, pais.codigo)}`} target="_blank" rel="noreferrer"><MessageCircle size={15} /> WhatsApp</a>}
           {cliente.email && <a className="btn btn-ghost btn-sm" href={`mailto:${cliente.email}`}><Mail size={15} /> Email</a>}
         </div>
       )}
@@ -136,6 +134,7 @@ function Ficha({ cliente, gestiona, onEditar, onEliminar, onClose }) {
 export default function Clientes() {
   const { puede, hoy } = useDatos()
   const { confirmar } = useDialogo()
+  const pais = usePais()
   const gestiona = puede('clientes.gestionar')
   const puedeCrear = gestiona || puede('ventas.crear')
   const [clientes, setClientes] = useState(null)
@@ -197,7 +196,7 @@ export default function Clientes() {
       <div className="toolbar">
         <label className="search">
           <Search size={18} />
-          <input placeholder="Buscar por nombre, RUT/DNI, teléfono o email" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+          <input placeholder={`Buscar por nombre, ${pais.documento}, teléfono o email`} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
         </label>
       </div>
 

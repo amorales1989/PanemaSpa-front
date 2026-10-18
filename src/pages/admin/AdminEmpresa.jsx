@@ -6,6 +6,7 @@ import { dinero } from '../../lib/format'
 import Modal from '../../components/Modal'
 import AdminUsuarios from './AdminUsuarios'
 import { PanelDemo } from './AdminDemo'
+import { LISTA_PAISES, paisDe } from '../../lib/paises'
 import { ESTADO_EMPRESA, ESTADO_SUSCRIPCION, fecha, sumarDias } from './adminFormato'
 
 const ESTADOS_SUSCRIPCION = ['prueba', 'activa', 'vencida', 'cancelada']
@@ -113,6 +114,7 @@ export default function AdminEmpresa() {
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
   const [confirmando, setConfirmando] = useState(false)
+  const [cambioPais, setCambioPais] = useState(null)
 
   const cargar = useCallback(() => api(`/admin/empresas/${id}`).then(setEmpresa).catch((e) => setError(e.message)), [id])
 
@@ -131,6 +133,17 @@ export default function AdminEmpresa() {
     try {
       setEmpresa(await api(`/admin/empresas/${id}/estado`, { metodo: 'PATCH', body: { estado } }))
       mostrarAviso(estado === 'activa' ? 'Empresa reactivada' : 'Empresa suspendida')
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  // El país cambia moneda, huso horario, CUIT/RUT y cuentas bancarias; los datos cargados no se tocan
+  const cambiarPais = async (pais) => {
+    setCambioPais(null)
+    try {
+      setEmpresa(await api(`/admin/empresas/${id}/pais`, { metodo: 'PATCH', body: { pais } }))
+      mostrarAviso(`País cambiado a ${paisDe(pais).nombre}`)
     } catch (e) {
       setError(e.message)
     }
@@ -191,6 +204,12 @@ export default function AdminEmpresa() {
             {empresa.esDemo && <Dato titulo="Movimientos desde">{fecha(empresa.primeraVenta)}</Dato>}
             <Dato titulo="Productos">{empresa.productos}</Dato>
             <Dato titulo="Sucursales">{empresa.sucursales}</Dato>
+            <div className="dato">
+              <span>País</span>
+              <select className="input input-sm" value={empresa.pais} aria-label="País" onChange={(e) => setCambioPais(e.target.value)}>
+                {LISTA_PAISES.map((p) => <option key={p.codigo} value={p.codigo}>{p.nombre}</option>)}
+              </select>
+            </div>
             <Dato titulo="Moneda">{empresa.moneda}</Dato>
             <Dato titulo="Zona horaria"><span title={empresa.zonaHoraria}>{empresa.zonaHoraria.split('/').pop().replace(/_/g, ' ')}</span></Dato>
           </div>
@@ -223,6 +242,18 @@ export default function AdminEmpresa() {
             {empresa.fundadora && <div className="alerta">Es la empresa fundadora, con contrato indefinido. Suspéndela solo si ellos lo pidieron.</div>}
             <button className="btn btn-peligro" onClick={() => cambiarEstado('suspendida')}><Ban size={18} /> Suspender</button>
             <button className="btn btn-ghost" onClick={() => setConfirmando(false)}>Cancelar</button>
+          </div>
+        </Modal>
+      )}
+      {cambioPais && (
+        <Modal titulo={`¿Cambiar a ${paisDe(cambioPais).nombre}?`} onClose={() => setCambioPais(null)}>
+          <div className="form">
+            <p>
+              <strong>{empresa.nombre}</strong> pasa a usar {paisDe(cambioPais).idFiscal} en vez de {paisDe(empresa.pais).idFiscal},
+              la moneda y el horario de {paisDe(cambioPais).nombre}, y sus cuentas bancarias. Los productos, precios y movimientos no cambian.
+            </p>
+            <button className="btn btn-primary" onClick={() => cambiarPais(cambioPais)}><Check size={18} /> Cambiar país</button>
+            <button className="btn btn-ghost" onClick={() => setCambioPais(null)}>Cancelar</button>
           </div>
         </Modal>
       )}

@@ -5,6 +5,7 @@ import { useDatos } from '../context/DataContext'
 import { api, urlArchivo } from '../lib/api'
 import { reducirLogo } from '../lib/imagen'
 import { VENTA_EJEMPLO, imprimirComprobante } from '../lib/comprobante'
+import { normalizarIdFiscal, usePais } from '../lib/paises'
 import { useDialogo } from '../components/Dialogo'
 import Equipo from '../components/Equipo'
 import ListaEditable from '../components/config/ListaEditable'
@@ -71,6 +72,7 @@ function Logo({ empresa, onCambio }) {
 
 function DatosEmpresa() {
   const { recargarPerfil, empresa } = useAuth()
+  const pais = usePais()
   const [form, setForm] = useState(null)
   const [estado, setEstado] = useState({ guardando: false, error: '', listo: false })
 
@@ -84,6 +86,9 @@ function DatosEmpresa() {
 
   const guardar = async (e) => {
     e.preventDefault()
+    if (form.rut.trim() && !normalizarIdFiscal(pais.codigo, form.rut)) {
+      return setEstado({ guardando: false, error: `${pais.idFiscal} inválido: revisa el dígito verificador`, listo: false })
+    }
     setEstado({ guardando: true, error: '', listo: false })
     try {
       await api('/empresa', { metodo: 'PATCH', body: { nombre: form.nombre.trim(), razonSocial: form.razonSocial.trim(), rut: form.rut.trim() } })
@@ -109,8 +114,10 @@ function DatosEmpresa() {
         <input id="emp-razon" className="input" maxLength={150} value={form.razonSocial} onChange={set('razonSocial')} />
       </div>
       <div className="campo">
-        <label htmlFor="emp-rut">RUT <span style={{ fontWeight: 400 }}>(opcional)</span></label>
-        <input id="emp-rut" className="input" maxLength={20} placeholder="76.123.456-7" value={form.rut} onChange={set('rut')} />
+        <label htmlFor="emp-rut">{pais.idFiscal} <span style={{ fontWeight: 400 }}>(opcional)</span></label>
+        <input id="emp-rut" className="input" maxLength={20} placeholder={pais.idFiscalEjemplo} value={form.rut} onChange={set('rut')}
+          onBlur={() => normalizarIdFiscal(pais.codigo, form.rut) && setForm((f) => ({ ...f, rut: normalizarIdFiscal(pais.codigo, f.rut) }))} />
+        <div className="sub" style={{ marginTop: 6 }}>País: {pais.nombre}. Si no corresponde, pídeselo al equipo de la plataforma.</div>
       </div>
       {estado.error && <div className="alerta-error" role="alert">{estado.error}</div>}
       <button className="btn btn-primary" disabled={estado.guardando}>
@@ -128,6 +135,7 @@ const FORMATOS = [
 // Al finalizar una venta, ofrecer imprimir el detalle para el cliente
 function ComprobanteVenta() {
   const { recargarPerfil, empresa } = useAuth()
+  const pais = usePais()
   const [form, setForm] = useState(() => ({
     comprobanteActivo: empresa.comprobanteActivo, comprobanteFormato: empresa.comprobanteFormato ?? 'ticket',
     direccion: empresa.direccion ?? '', telefono: empresa.telefono ?? '', comprobantePie: empresa.comprobantePie ?? '',
@@ -186,7 +194,7 @@ function ComprobanteVenta() {
         <label htmlFor="emp-pie">Mensaje al pie <span style={{ fontWeight: 400 }}>(opcional)</span></label>
         <input id="emp-pie" className="input" maxLength={200} placeholder="¡Gracias por tu compra!" value={form.comprobantePie} onChange={set('comprobantePie')} />
       </div>
-      <div className="sub">También usa el logo, la razón social y el RUT de arriba. Es un comprobante interno, no una boleta ni factura.</div>
+      <div className="sub">También usa el logo, la razón social y el {pais.idFiscal} de arriba. Es un comprobante interno, no una boleta ni factura.</div>
       {estado.error && <div className="alerta-error" role="alert">{estado.error}</div>}
       <div className="acciones-form">
         <button type="button" className="btn btn-ghost" onClick={vistaPrevia}><Printer size={18} /> Vista previa</button>
