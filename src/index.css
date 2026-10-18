@@ -756,7 +756,11 @@ textarea.input { resize: vertical; font: inherit; }
 .desglose-total { display: grid; gap: 4px; padding: 0 16px; font-size: 14px; color: var(--muted); }
 .desglose-total > div { display: flex; justify-content: space-between; gap: 12px; }
 .desglose-total .descuento { color: var(--ingreso); font-weight: 600; }
-.lista-descuento { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-.lista-descuento input { width: 56px; text-align: right; }
+.lista-editar-acciones { display: flex; gap: 2px; }
+/* Edición con descuento: nombre a lo ancho; debajo el % y los botones */
+.lista-editar.con-descuento { flex-wrap: wrap; row-gap: 8px; }
+.lista-editar.con-descuento > .input { flex: 1 1 100%; }
+.lista-descuento { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; margin-right: auto; }
+.lista-editar .lista-descuento .input { flex: none; width: 64px; min-width: 0; text-align: right; }
 
 .ficha-subtitulo { font-size: 15px; font-weight: 600; margin: 20px 0 8px; }

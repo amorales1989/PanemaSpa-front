@@ -75,18 +75,25 @@ export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {},
         {filas.map((f) => (
           <li key={f.id} className={f.activo ? '' : 'inactiva'}>
             {editando?.id === f.id ? (
-              <form className="lista-editar" onSubmit={renombrar}>
+              <form className={`lista-editar ${conDescuento ? 'con-descuento' : ''}`} onSubmit={renombrar}>
                 <input className="input input-sm" autoFocus value={editando.nombre} maxLength={60}
                   onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} aria-label="Nuevo nombre" />
+                {/* Medios de pago: el % va en una segunda línea para no achicar el nombre */}
                 {conDescuento && (
-                  <label className="lista-descuento" title="Descuento en ventas pagadas con este medio">
+                  <label className="lista-descuento">
+                    Descuento en ventas
                     <input className="input input-sm" inputMode="decimal" value={editando.descuentoPct} aria-label="Porcentaje de descuento"
+                      placeholder="0"
+                      // Al entrar: sin el 0 para escribir limpio; si ya tiene un %, queda seleccionado para reemplazarlo
+                      onFocus={(e) => (Number(editando.descuentoPct) ? e.target.select() : setEditando({ ...editando, descuentoPct: '' }))}
                       onChange={(e) => setEditando({ ...editando, descuentoPct: e.target.value.replace(/[^\d.,]/g, '') })} />
-                    % dto.
+                    %
                   </label>
                 )}
-                <button className="icon-btn" disabled={ocupado} aria-label="Guardar"><Check size={18} /></button>
-                <button type="button" className="icon-btn" onClick={() => setEditando(null)} aria-label="Cancelar"><X size={18} /></button>
+                <div className="lista-editar-acciones">
+                  <button className="icon-btn" disabled={ocupado} aria-label="Guardar" title="Guardar"><Check size={18} /></button>
+                  <button type="button" className="icon-btn" onClick={() => setEditando(null)} aria-label="Cancelar" title="Cancelar"><X size={18} /></button>
+                </div>
               </form>
             ) : (
               <>
