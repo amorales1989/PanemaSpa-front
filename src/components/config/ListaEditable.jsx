@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Check, Pencil, Plus, Star, Trash2, X } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useDialogo } from '../Dialogo'
 
@@ -7,7 +7,8 @@ import { useDialogo } from '../Dialogo'
 // activar/desactivar (pausar) y eliminar. Si lo eliminado ya se usó, el servidor lo archiva:
 // desaparece de acá y de los formularios, y los registros viejos lo siguen mostrando.
 // `conDescuento`: cada opción lleva un % de descuento en ventas (medios de pago)
-export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {}, etiqueta, conDescuento, onCambio }) {
+// `conPorDefecto`: una opción se marca con la estrella y la caja abre la venta con ella elegida
+export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {}, etiqueta, conDescuento, conPorDefecto, onCambio }) {
   const [nuevo, setNuevo] = useState('')
   const [editando, setEditando] = useState(null) // { id, nombre, descuentoPct }
   const [error, setError] = useState('')
@@ -42,6 +43,8 @@ export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {},
     const body = { nombre: editando.nombre.trim(), ...(conDescuento && { descuentoPct: Number(String(editando.descuentoPct).replace(',', '.')) || 0 }) }
     if (await ejecutar(() => api(`/config/${lista}/${editando.id}`, { metodo: 'PATCH', body }))) setEditando(null)
   }
+
+  const marcarPorDefecto = (f) => ejecutar(() => api(`/config/${lista}/${f.id}`, { metodo: 'PATCH', body: { porDefecto: !f.porDefecto } }))
 
   const alternar = (f) => ejecutar(() => api(`/config/${lista}/${f.id}`, { metodo: 'PATCH', body: { activo: !f.activo } }))
 
@@ -97,6 +100,13 @@ export default function ListaEditable({ titulo, ayuda, lista, filas, extra = {},
               </form>
             ) : (
               <>
+                {conPorDefecto && (
+                  <button type="button" className={`icon-btn estrella ${f.porDefecto ? 'on' : ''}`} onClick={() => marcarPorDefecto(f)} disabled={ocupado}
+                    aria-pressed={!!f.porDefecto} aria-label={f.porDefecto ? `Quitar ${f.nombre} como opción por defecto` : `Usar ${f.nombre} por defecto en las ventas`}
+                    title={f.porDefecto ? 'Por defecto en las ventas (toca para quitar)' : 'Usar por defecto en las ventas'}>
+                    <Star size={16} fill={f.porDefecto ? 'currentColor' : 'none'} />
+                  </button>
+                )}
                 <span className="lista-nombre">
                   {f.nombre}{etiqueta?.(f)}
                   {conDescuento && f.descuentoPct > 0 && <span className="badge bien" style={{ marginLeft: 8 }}>−{f.descuentoPct}% en ventas</span>}

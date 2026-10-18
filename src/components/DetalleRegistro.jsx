@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { imprimirComprobante } from '../lib/comprobante'
 import { TIPOS } from '../lib/tipos'
 import { dinero, etiquetaDia } from '../lib/format'
-import { fmtNum, resumenItems, subtotal } from '../lib/items'
+import { descuentosPorLinea, fmtNum, resumenItems, subtotal } from '../lib/items'
 
 // Detalle de una venta / egreso / merma con sus líneas
 export default function DetalleRegistro({ tipo, registro, onClose }) {
@@ -18,6 +18,9 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
   const [motivo, setMotivo] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+
+  // Descuento del medio de pago repartido en cada línea
+  const descuentos = r.descuento > 0 && r.items ? descuentosPorLinea(r.items, r.descuento) : null
 
   const datos = [
     ['Fecha', `${etiquetaDia(r.fecha, hoy)}${r.hora ? ` · ${r.hora}` : ''}`],
@@ -54,12 +57,16 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
         <table className="tabla" style={{ marginTop: 16 }}>
           <thead><tr><th>{tipo === 'egresos' ? 'Insumo' : 'Producto'}</th><th className="num">Cant.</th><th className="num">Precio</th><th className="num">Total</th></tr></thead>
           <tbody>
-            {r.items.map((i) => (
+            {r.items.map((i, n) => (
               <tr key={`${i.tipo}:${i.id}`}>
                 <td><span className="tile-codigo">#{i.codigo}</span> {i.tipo === 'promo' && <span className="etiqueta-promo">Promo</span>} {i.nombre}{i.componentes && <div className="sub">{resumenItems(i.componentes)}</div>}</td>
                 <td className="num">{fmtNum(i.cantidad)} {i.unidad}</td>
                 <td className="num">{dinero(i.precio)}</td>
-                <td className="num">{dinero(subtotal(i))}</td>
+                <td className="num">
+                  {descuentos?.[n] > 0
+                    ? <><s className="sub">{dinero(subtotal(i))}</s><div>{dinero(subtotal(i) - descuentos[n])}</div></>
+                    : dinero(subtotal(i))}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -68,7 +75,7 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
 
       {r.descuento > 0 && (
         <div className="desglose-total" style={{ marginTop: 16 }}>
-          <div><span>Subtotal</span><span>{dinero(r.monto + r.descuento)}</span></div>
+          <div><span>Subtotal sin descuento</span><span>{dinero(r.monto + r.descuento)}</span></div>
           <div className="descuento"><span>Descuento {r.metodo} ({r.descuentoPct}%)</span><span>−{dinero(r.descuento)}</span></div>
         </div>
       )}

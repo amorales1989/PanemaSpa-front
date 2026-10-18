@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import { useDatos } from '../context/DataContext'
 import { TIPOS, categoriasDe } from '../lib/tipos'
 import { dinero, isoLocal } from '../lib/format'
-import { num, totalItems } from '../lib/items'
+import { descuentosPorLinea, num, totalItems } from '../lib/items'
 import { Catalogo, Ticket, sumarAlTicket } from './Items'
 import SelectorCliente from './SelectorCliente'
 
@@ -26,10 +26,12 @@ export default function RegistroForm({ tipo, onDone }) {
   const { agregar, hoy, catalogo, listas, config, puede } = useDatos()
   const t = TIPOS[tipo]
   const categorias = categoriasDe(tipo, listas)
-  const metodoInicial = tipo === 'egresos' ? 'Transferencia' : 'Efectivo'
+  const esVenta = tipo === 'ingresos'
+  // Ventas: canal y medio de pago por defecto de la empresa (Configuración → Listas, la estrella)
+  const metodoInicial = esVenta ? listas.metodoPorDefecto ?? 'Efectivo' : 'Transferencia'
 
   const [items, setItems] = useState([])
-  const [categoria, setCategoria] = useState(categorias[0])
+  const [categoria, setCategoria] = useState(esVenta && listas.canalPorDefecto ? listas.canalPorDefecto : categorias[0])
   const [metodo, setMetodo] = useState(listas.metodosPago.includes(metodoInicial) ? metodoInicial : listas.metodosPago[0])
   const [fecha, setFecha] = useState(isoLocal(hoy))
   const [proveedor, setProveedor] = useState('')
@@ -48,6 +50,8 @@ export default function RegistroForm({ tipo, onDone }) {
   const subtotalVenta = conItems ? totalItems(items) : parseInt(monto) || 0
   const descuento = Math.round((subtotalVenta * descuentoPct) / 100)
   const total = subtotalVenta - descuento
+  // El descuento repartido en cada línea, para mostrarlo ítem por ítem
+  const descuentos = descuento > 0 ? descuentosPorLinea(items, descuento) : null
   // La merma la valoriza el servidor (quien no ve costos ve $0): basta con tener ítems
   const valido = !guardando && (tipo === 'mermas' ? items.some((i) => num(i.cantidad) > 0) : total > 0)
 
@@ -123,7 +127,7 @@ export default function RegistroForm({ tipo, onDone }) {
             </div>
             <Ticket
               items={items} onChange={setItems} precioEditable={tipo === 'egresos' || (tipo === 'ingresos' && puede('ventas.modificar_precio'))}
-              etiquetaPrecio={tipo === 'mermas' ? 'costo c/u' : 'c/u'}
+              etiquetaPrecio={tipo === 'mermas' ? 'costo c/u' : 'c/u'} descuentos={descuentos}
               vacio={tipo === 'ingresos' ? 'Toca un producto o escribe su código para agregarlo' : 'Agrega lo que corresponda tocando o escribiendo el código'}
             />
             {descuento > 0 && (

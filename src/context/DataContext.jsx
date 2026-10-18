@@ -312,6 +312,9 @@ export function DataProvider({ children }) {
       categoriasProducto: nombres(config.categorias.producto),
       categoriasInsumo: nombres(config.categorias.insumo),
       proveedores: nombres(config.proveedores),
+      // Lo que la caja deja elegido al abrir una venta (si está activo)
+      canalPorDefecto: config.canales.find((c) => c.porDefecto && c.activo)?.nombre,
+      metodoPorDefecto: config.metodosPago.find((m) => m.porDefecto && m.activo)?.nombre,
     }
   }, [config])
 

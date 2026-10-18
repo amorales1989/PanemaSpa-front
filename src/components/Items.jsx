@@ -209,7 +209,8 @@ export function Catalogo({ catalogos, items, onAgregar, pedirPeso }) {
 }
 
 // Líneas del ticket con cantidad (y precio) editable
-export function Ticket({ items, onChange, precioEditable, etiquetaPrecio = 'c/u', vacio, error }) {
+// `descuentos`: descuento de cada línea (mismo orden que items), si la venta tiene uno
+export function Ticket({ items, onChange, precioEditable, etiquetaPrecio = 'c/u', vacio, error, descuentos }) {
   // Al agregar una línea nueva, la lista baja para mostrarla
   const listaRef = useRef(null)
   const cantidadLineas = useRef(items.length)
@@ -230,8 +231,9 @@ export function Ticket({ items, onChange, precioEditable, etiquetaPrecio = 'c/u'
 
   return (
     <div className="ticket" ref={listaRef}>
-      {items.map((i) => {
+      {items.map((i, n) => {
         const k = claveItem(i)
+        const desc = descuentos?.[n] ?? 0
         return (
           <div className={`linea ${i.tipo !== 'insumo' ? 'con-imagen' : ''}`} key={k}>
             {i.tipo !== 'insumo' && <ImagenProducto producto={i} tamano={36} />}
@@ -256,7 +258,9 @@ export function Ticket({ items, onChange, precioEditable, etiquetaPrecio = 'c/u'
               />
               <button type="button" onClick={() => mover(i, 1)} aria-label="Sumar"><Plus size={14} /></button>
             </div>
-            <div className="linea-total">{dinero(subtotal(i))}</div>
+            <div className="linea-total">
+              {desc > 0 ? <><s>{dinero(subtotal(i))}</s>{dinero(subtotal(i) - desc)}</> : dinero(subtotal(i))}
+            </div>
             <button type="button" className="icon-btn" onClick={() => quitar(k)} aria-label={`Quitar ${i.nombre}`}><X size={16} /></button>
           </div>
         )

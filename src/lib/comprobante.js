@@ -3,7 +3,7 @@
 // de los estilos de la app y el diálogo de impresión muestra solo el comprobante.
 import { urlArchivo } from './api'
 import { dinero } from './format'
-import { cantidadTexto, fmtNum, subtotal } from './items'
+import { cantidadTexto, descuentosPorLinea, fmtNum, subtotal } from './items'
 import { paisDe } from './paises'
 
 const escapar = (t) =>
@@ -24,6 +24,7 @@ const ESTILOS = {
     .num { text-align: right; white-space: nowrap; padding-left: 6px; }
     .cant { white-space: nowrap; padding-right: 6px; }
     .comp { font-size: 10px; padding-left: 10px; }
+    .desc td { font-size: 11px; padding-top: 0; }
     .fila { display: flex; justify-content: space-between; }
     .total { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; }
     .pie, .legal { text-align: center; }
@@ -55,15 +56,21 @@ const ESTILOS = {
 }
 
 function lineas(venta, formato) {
-  return venta.items.map((i) => {
+  // Descuento del medio de pago, repartido en cada línea (la suma da el descuento total)
+  const descuentos = venta.descuento > 0 ? descuentosPorLinea(venta.items, venta.descuento) : null
+  return venta.items.map((i, n) => {
+    const desc = descuentos?.[n] ?? 0
     const comp = i.componentes?.length
       ? `<div class="comp">${i.componentes.map((c) => escapar(`${fmtNum(c.cantidad * i.cantidad)} ${c.unidad === 'un' ? '×' : c.unidad} ${c.nombre}`)).join('<br>')}</div>`
       : ''
     if (formato === 'ticket') {
-      return `<tr><td class="cant">${escapar(cantidadTexto(i))}</td><td>${escapar(i.nombre)}${comp}</td><td class="num">${dinero(subtotal(i))}</td></tr>`
+      const lineaDesc = desc > 0
+        ? `<tr class="desc"><td></td><td>Desc. ${venta.descuentoPct}%</td><td class="num">−${dinero(desc)}</td></tr>` : ''
+      return `<tr><td class="cant">${escapar(cantidadTexto(i))}</td><td>${escapar(i.nombre)}${comp}</td><td class="num">${dinero(subtotal(i))}</td></tr>${lineaDesc}`
     }
     return `<tr><td>${i.codigo ? `${i.codigo}` : ''}</td><td>${escapar(i.nombre)}${comp}</td>
-      <td class="num">${fmtNum(i.cantidad)} ${escapar(i.unidad)}</td><td class="num">${dinero(i.precio)}</td><td class="num">${dinero(subtotal(i))}</td></tr>`
+      <td class="num">${fmtNum(i.cantidad)} ${escapar(i.unidad)}</td><td class="num">${dinero(i.precio)}</td>
+      ${descuentos ? `<td class="num">${desc > 0 ? `−${dinero(desc)}` : ''}</td>` : ''}<td class="num">${dinero(subtotal(i) - desc)}</td></tr>`
   }).join('')
 }
 
@@ -83,7 +90,7 @@ export function htmlComprobante(venta, empresa) {
   ].filter(Boolean)
   // Subtotal y descuento del medio de pago, si hubo
   const desglose = venta.descuento > 0
-    ? [['Subtotal', dinero(venta.monto + venta.descuento)], [`Descuento ${venta.metodo} (${venta.descuentoPct}%)`, `−${dinero(venta.descuento)}`]]
+    ? [['Subtotal sin descuento', dinero(venta.monto + venta.descuento)], [`Descuento ${venta.metodo} (${venta.descuentoPct}%)`, `−${dinero(venta.descuento)}`]]
     : []
 
   const cabecera = `
@@ -107,7 +114,8 @@ export function htmlComprobante(venta, empresa) {
       <div class="titulo"><h2>Comprobante de venta</h2><b>N° ${numero}</b></div>
       <div class="datos">${datos.map(([k, v]) => `<div><span>${k}</span>${escapar(v)}</div>`).join('')}</div>
       <table>
-        <thead><tr><th>Cód.</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th></tr></thead>
+        <thead><tr><th>Cód.</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th>
+          ${venta.descuento > 0 ? `<th class="num">Desc. ${venta.descuentoPct}%</th>` : ''}<th class="num">Total</th></tr></thead>
         <tbody>${lineas(venta, formato)}</tbody>
       </table>
       ${desglose.map(([k, v]) => `<div class="fila"><span>${escapar(k)}</span><span>${v}</span></div>`).join('')}

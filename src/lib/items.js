@@ -10,6 +10,20 @@ export const cantidadTexto = (i) => (i.unidad === 'un' ? `${fmtNum(i.cantidad)}�
 export const resumenItems = (items) => items.map((i) => `${cantidadTexto(i)} ${i.nombre}`).join(', ')
 export const claveItem = (i) => `${i.tipo}:${i.id}`
 
+// Reparte el descuento de la venta entre sus líneas, en proporción a cada subtotal.
+// Los pesos que sobran del redondeo van a las líneas con mayor fracción: la suma da exacto el descuento.
+export function descuentosPorLinea(items, descuento) {
+  const subs = items.map(subtotal)
+  const total = subs.reduce((t, s) => t + s, 0)
+  if (!descuento || !total) return subs.map(() => 0)
+  const exactos = subs.map((s) => (s * descuento) / total)
+  const partes = exactos.map(Math.floor)
+  let resto = descuento - partes.reduce((t, p) => t + p, 0)
+  const porFraccion = exactos.map((e, i) => [e - partes[i], i]).sort((a, b) => b[0] - a[0])
+  for (let k = 0; resto > 0 && porFraccion.length; k++, resto--) partes[porFraccion[k % porFraccion.length][1]]++
+  return partes
+}
+
 // ---------- Promos ----------
 
 export const precioNormal = (promo, productos) =>
