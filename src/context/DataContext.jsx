@@ -118,11 +118,15 @@ export function DataProvider({ children }) {
     try {
       if (tipo === 'ingresos') {
         const v = await api('/ventas', { metodo: 'POST', body: ventaHaciaApi(item, config, hoyIso, puede('ventas.modificar_precio')), headers: clave })
-        actualizar('ingresos', (l) => [ventaDesdeApi(v, zona), ...l].sort(ordenarRecientes))
-        const marca = Date.now()
-        setExito({ clave: marca, monto: v.total })
-        setTimeout(() => setExito((e) => (e?.clave === marca ? null : e)), 1800)
-        return
+        const venta = ventaDesdeApi(v, zona)
+        actualizar('ingresos', (l) => [venta, ...l].sort(ordenarRecientes))
+        // Con comprobante, la pantalla "Venta registrada" ya lo confirma: sin animación encima
+        if (!empresa?.comprobanteActivo) {
+          const marca = Date.now()
+          setExito({ clave: marca, monto: v.total })
+          setTimeout(() => setExito((e) => (e?.clave === marca ? null : e)), 1800)
+        }
+        return venta // para imprimir el comprobante
       }
       if (tipo === 'egresos') {
         const e = await api('/egresos', { metodo: 'POST', body: egresoHaciaApi(item, config, hoyIso), headers: clave })
@@ -141,7 +145,7 @@ export function DataProvider({ children }) {
     } catch (e) {
       throw new Error(mensajeDe(e))
     }
-  }, [config, hoyIso, puede, zona, avisar])
+  }, [config, hoyIso, puede, zona, avisar, empresa])
 
   // Los movimientos no se borran: se anulan (queda el registro de quién y por qué)
   const anular = useCallback(async (tipo, id, motivo) => {

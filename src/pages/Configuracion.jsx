@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ImagePlus, Loader2 } from 'lucide-react'
+import { Check, ImagePlus, Loader2, Printer } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useDatos } from '../context/DataContext'
 import { api, urlArchivo } from '../lib/api'
 import { reducirLogo } from '../lib/imagen'
+import { VENTA_EJEMPLO, imprimirComprobante } from '../lib/comprobante'
 import { useDialogo } from '../components/Dialogo'
 import Equipo from '../components/Equipo'
 import ListaEditable from '../components/config/ListaEditable'
@@ -119,6 +120,84 @@ function DatosEmpresa() {
   )
 }
 
+const FORMATOS = [
+  { id: 'ticket', label: 'Ticket 80 mm', ayuda: 'Impresora térmica de caja' },
+  { id: 'carta', label: 'Hoja carta / A4', ayuda: 'Impresora común' },
+]
+
+// Al finalizar una venta, ofrecer imprimir el detalle para el cliente
+function ComprobanteVenta() {
+  const { recargarPerfil, empresa } = useAuth()
+  const [form, setForm] = useState(() => ({
+    comprobanteActivo: empresa.comprobanteActivo, comprobanteFormato: empresa.comprobanteFormato ?? 'ticket',
+    direccion: empresa.direccion ?? '', telefono: empresa.telefono ?? '', comprobantePie: empresa.comprobantePie ?? '',
+  }))
+  const [estado, setEstado] = useState({ guardando: false, error: '', listo: false })
+  const set = (campo) => (e) => { setForm((f) => ({ ...f, [campo]: e.target.value })); setEstado((s) => ({ ...s, listo: false })) }
+  const cambiar = (cambios) => { setForm((f) => ({ ...f, ...cambios })); setEstado((s) => ({ ...s, listo: false })) }
+
+  const guardar = async (e) => {
+    e.preventDefault()
+    setEstado({ guardando: true, error: '', listo: false })
+    try {
+      await api('/empresa', {
+        metodo: 'PATCH',
+        body: { ...form, direccion: form.direccion.trim(), telefono: form.telefono.trim(), comprobantePie: form.comprobantePie.trim() },
+      })
+      await recargarPerfil() // la caja toma la configuración nueva al instante
+      setEstado({ guardando: false, error: '', listo: true })
+    } catch (err) {
+      setEstado({ guardando: false, error: Object.values(err.detalles ?? {})[0]?.[0] ?? err.message, listo: false })
+    }
+  }
+
+  // La vista previa usa lo que está en pantalla, aunque todavía no se haya guardado
+  const vistaPrevia = () => imprimirComprobante(VENTA_EJEMPLO, { ...empresa, ...form })
+
+  return (
+    <form className="card form" style={{ maxWidth: 560 }} onSubmit={guardar}>
+      <div className="card-head" style={{ marginBottom: 0 }}><h2>Comprobante de venta</h2></div>
+      <label className="fila-switch">
+        <button type="button" className={`switch ${form.comprobanteActivo ? 'on' : ''}`} role="switch" aria-checked={form.comprobanteActivo}
+          onClick={() => cambiar({ comprobanteActivo: !form.comprobanteActivo })}>
+          <span />
+        </button>
+        Ofrecer imprimir el detalle al finalizar cada venta
+      </label>
+      <div className="campo">
+        <label>Formato</label>
+        <div className="segmented" role="radiogroup" aria-label="Formato del comprobante">
+          {FORMATOS.map((f) => (
+            <button type="button" key={f.id} role="radio" aria-checked={form.comprobanteFormato === f.id} title={f.ayuda}
+              className={form.comprobanteFormato === f.id ? 'on' : ''} onClick={() => cambiar({ comprobanteFormato: f.id })}>{f.label}</button>
+          ))}
+        </div>
+        <div className="sub" style={{ marginTop: 6 }}>{FORMATOS.find((f) => f.id === form.comprobanteFormato).ayuda}.</div>
+      </div>
+      <div className="campo">
+        <label htmlFor="emp-direccion">Dirección <span style={{ fontWeight: 400 }}>(opcional)</span></label>
+        <input id="emp-direccion" className="input" maxLength={200} value={form.direccion} onChange={set('direccion')} />
+      </div>
+      <div className="campo">
+        <label htmlFor="emp-telefono">Teléfono <span style={{ fontWeight: 400 }}>(opcional)</span></label>
+        <input id="emp-telefono" className="input" maxLength={30} value={form.telefono} onChange={set('telefono')} />
+      </div>
+      <div className="campo">
+        <label htmlFor="emp-pie">Mensaje al pie <span style={{ fontWeight: 400 }}>(opcional)</span></label>
+        <input id="emp-pie" className="input" maxLength={200} placeholder="¡Gracias por tu compra!" value={form.comprobantePie} onChange={set('comprobantePie')} />
+      </div>
+      <div className="sub">También usa el logo, la razón social y el RUT de arriba. Es un comprobante interno, no una boleta ni factura.</div>
+      {estado.error && <div className="alerta-error" role="alert">{estado.error}</div>}
+      <div className="acciones-form">
+        <button type="button" className="btn btn-ghost" onClick={vistaPrevia}><Printer size={18} /> Vista previa</button>
+        <button className="btn btn-primary" style={{ flex: 1 }} disabled={estado.guardando}>
+          <Check size={18} /> {estado.guardando ? 'Guardando…' : estado.listo ? 'Guardado' : 'Guardar'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 function Listas() {
   const { config, recargarConfig, puede } = useDatos()
   const generales = puede('configuracion.gestionar')
@@ -169,7 +248,12 @@ export default function Configuracion() {
       )}
       {actual === 'listas' && <Listas />}
       {actual === 'importar' && <Importar />}
-      {actual === 'empresa' && <DatosEmpresa />}
+      {actual === 'empresa' && (
+        <div className="grid">
+          <DatosEmpresa />
+          <ComprobanteVenta />
+        </div>
+      )}
     </>
   )
 }

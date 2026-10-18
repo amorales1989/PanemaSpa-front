@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Ban } from 'lucide-react'
+import { Ban, Printer } from 'lucide-react'
 import Modal from './Modal'
 import { useDatos } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
+import { imprimirComprobante } from '../lib/comprobante'
 import { TIPOS } from '../lib/tipos'
 import { dinero, etiquetaDia } from '../lib/format'
 import { fmtNum, resumenItems, subtotal } from '../lib/items'
@@ -9,6 +11,7 @@ import { fmtNum, resumenItems, subtotal } from '../lib/items'
 // Detalle de una venta / egreso / merma con sus líneas
 export default function DetalleRegistro({ tipo, registro, onClose }) {
   const { anular, hoy, puede } = useDatos()
+  const { empresa } = useAuth()
   const t = TIPOS[tipo]
   const r = registro
   const [anulando, setAnulando] = useState(false)
@@ -65,6 +68,11 @@ export default function DetalleRegistro({ tipo, registro, onClose }) {
       <div className="total-ticket" style={{ background: t.suave, marginTop: 16 }}>
         <span>Total</span><strong>{dinero(r.monto)}</strong>
       </div>
+      {tipo === 'ingresos' && empresa?.comprobanteActivo && (
+        <button type="button" className="btn btn-ghost" style={{ marginTop: 12, width: '100%' }} onClick={() => imprimirComprobante(r, empresa)}>
+          <Printer size={18} /> Imprimir comprobante
+        </button>
+      )}
       {puede(t.permisoAnular) && (anulando ? (
         <form className="form anular" onSubmit={confirmarAnulacion}>
           <div className="campo">

@@ -1,8 +1,31 @@
 import { useState } from 'react'
+import { CircleCheck, Plus, Printer } from 'lucide-react'
 import Modal from './Modal'
 import RegistroForm from './RegistroForm'
 import { TIPOS } from '../lib/tipos'
 import { useDatos } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
+import { dinero } from '../lib/format'
+import { imprimirComprobante } from '../lib/comprobante'
+
+// Después de una venta, si la empresa usa comprobante: imprimirlo o seguir vendiendo
+function VentaLista({ venta, empresa, onNueva }) {
+  return (
+    <div className="venta-lista">
+      <CircleCheck size={44} className="venta-lista-icono" />
+      <div>
+        <h3 className="serif">Venta #{venta.numero} registrada</h3>
+        <p className="sub">{dinero(venta.monto)} · {venta.metodo}</p>
+      </div>
+      <div className="venta-lista-acciones">
+        <button type="button" className="btn btn-primary" autoFocus onClick={() => imprimirComprobante(venta, empresa)}>
+          <Printer size={18} /> Imprimir comprobante
+        </button>
+        <button type="button" className="btn btn-registrar" onClick={onNueva}><Plus size={18} /> Nueva venta</button>
+      </div>
+    </div>
+  )
+}
 
 // Modal "¿Qué quieres registrar?" → formulario del tipo elegido.
 // Si recibe `tipoInicial`, salta directo al formulario.
@@ -11,14 +34,22 @@ export default function Registrar({ tipoInicial = null, onClose }) {
   // Las ventas se registran seguidas: al finalizar, el formulario se limpia
   // (se vuelve a montar) y el modal sigue abierto hasta tocar la ✕
   const [ventas, setVentas] = useState(0)
+  const [ultima, setUltima] = useState(null)
   const { puede } = useDatos()
+  const { empresa } = useAuth()
   const permitidos = Object.entries(TIPOS).filter(([, t]) => puede(t.permisoCrear))
 
   if (tipo) {
     const esVenta = tipo === 'ingresos'
+    const terminarVenta = (venta) => {
+      setVentas((n) => n + 1)
+      if (empresa?.comprobanteActivo && venta) setUltima(venta)
+    }
     return (
       <Modal titulo={TIPOS[tipo].nuevo} onClose={onClose} soloCruz={esVenta}>
-        <RegistroForm key={ventas} tipo={tipo} onDone={esVenta ? () => setVentas((n) => n + 1) : onClose} />
+        {ultima
+          ? <VentaLista venta={ultima} empresa={empresa} onNueva={() => setUltima(null)} />
+          : <RegistroForm key={ventas} tipo={tipo} onDone={esVenta ? terminarVenta : onClose} />}
       </Modal>
     )
   }

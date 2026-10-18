@@ -60,11 +60,12 @@ export default function RegistroForm({ tipo, onDone }) {
     setGuardando(true)
     setError('')
     try {
-      if (tipo === 'ingresos') await agregar('ingresos', { fecha, hora: ahora(), categoria, metodo, items: lineas, monto: total })
+      let venta
+      if (tipo === 'ingresos') venta = await agregar('ingresos', { fecha, hora: ahora(), categoria, metodo, items: lineas, monto: total })
       else if (tipo === 'mermas') await agregar('mermas', { fecha, motivo, items: lineas, monto: total })
       else if (conItems) await agregar('egresos', { fecha, categoria, descripcion: proveedor.trim() || 'Compra de insumos', proveedor: proveedor.trim(), metodo, items: lineas, monto: total })
       else await agregar('egresos', { fecha, categoria, descripcion: descripcion.trim() || categoria, metodo, monto: total })
-      onDone()
+      onDone(venta)
     } catch (err) {
       setError(err.message)
       setGuardando(false)
