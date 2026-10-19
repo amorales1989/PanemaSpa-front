@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import Modal from './Modal'
 import FotoProducto from './FotoProducto'
 import { useDatos } from '../context/DataContext'
@@ -12,15 +12,7 @@ const UNIDADES = {
   insumo: [['un', 'Unidad'], ['kg', 'Kilo'], ['lt', 'Litro']],
 }
 
-function Chips({ opciones, valor, onChange }) {
-  return (
-    <div className="chips">
-      {opciones.map(([id, texto]) => (
-        <button type="button" key={id} className={`chip ${valor === id ? 'on' : ''}`} onClick={() => onChange(id)}>{texto}</button>
-      ))}
-    </div>
-  )
-}
+const NUEVA = '__nueva'
 
 function Campo({ id, label, error, children, opcional }) {
   return (
@@ -197,19 +189,26 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
           </div>
         </div>
 
-        <Campo label="Categoría" error={ver('categoria')}>
-          <div className="chips">
-            {categorias.map((c) => (
-              <button type="button" key={c} className={`chip ${!creandoCategoria && categoria === c ? 'on' : ''}`} onClick={() => { setCategoria(c); setCreandoCategoria(false) }}>{c}</button>
-            ))}
-            <button type="button" className={`chip ${creandoCategoria ? 'on' : ''}`} onClick={() => setCreandoCategoria(true)}><Plus size={13} style={{ verticalAlign: -2 }} /> Nueva</button>
-          </div>
-          {creandoCategoria && <input className="input" style={{ marginTop: 8 }} autoFocus placeholder="Nombre de la categoría" value={nuevaCategoria} onChange={(e) => setNuevaCategoria(e.target.value)} />}
-        </Campo>
-
-        <Campo label={esProducto ? 'Se vende' : 'Se compra por'}>
-          <Chips opciones={UNIDADES[tipo]} valor={unidad} onChange={setUnidad} />
-        </Campo>
+        <div className="fila">
+          <Campo id="cat-categoria" label="Categoría" error={ver('categoria')}>
+            <select id="cat-categoria" className="input" value={creandoCategoria ? NUEVA : categoria}
+              onChange={(e) => {
+                const nueva = e.target.value === NUEVA
+                setCreandoCategoria(nueva)
+                if (!nueva) setCategoria(e.target.value)
+              }}>
+              {!categoria && !creandoCategoria && <option value="">Elige una categoría…</option>}
+              {categorias.map((c) => <option key={c} value={c}>{c}</option>)}
+              <option value={NUEVA}>+ Nueva categoría…</option>
+            </select>
+            {creandoCategoria && <input className="input" style={{ marginTop: 8 }} autoFocus placeholder="Nombre de la categoría" value={nuevaCategoria} onChange={(e) => setNuevaCategoria(e.target.value)} />}
+          </Campo>
+          <Campo id="cat-unidad" label={esProducto ? 'Se vende' : 'Se compra por'}>
+            <select id="cat-unidad" className="input" value={unidad} onChange={(e) => setUnidad(e.target.value)}>
+              {UNIDADES[tipo].map(([id, texto]) => <option key={id} value={id}>{texto}</option>)}
+            </select>
+          </Campo>
+        </div>
 
         <div className="fila">
           <Campo id="cat-precio" label={esProducto ? `Precio de venta${unidad === 'kg' ? ' por kilo' : ''}` : `Precio de compra por ${unidad === 'un' ? 'unidad' : unidad}`} error={ver('precio')}>
