@@ -102,7 +102,7 @@ function DatosEmpresa() {
   if (!form) return estado.error ? <div className="alerta-error">{estado.error}</div> : <div className="vacio">Cargando…</div>
 
   return (
-    <form className="card form" style={{ maxWidth: 560 }} onSubmit={guardar}>
+    <form className="card form" onSubmit={guardar}>
       <Logo empresa={empresa} onCambio={recargarPerfil} />
       <div className="campo">
         <label htmlFor="emp-nombre">Nombre del negocio</label>
@@ -163,7 +163,7 @@ function ComprobanteVenta() {
   const vistaPrevia = () => imprimirComprobante(VENTA_EJEMPLO, { ...empresa, ...form })
 
   return (
-    <form className="card form" style={{ maxWidth: 560 }} onSubmit={guardar}>
+    <form className="card form" onSubmit={guardar}>
       <div className="card-head" style={{ marginBottom: 0 }}><h2>Comprobante de venta</h2></div>
       <label className="fila-switch">
         <button type="button" className={`switch ${form.comprobanteActivo ? 'on' : ''}`} role="switch" aria-checked={form.comprobanteActivo}
@@ -225,7 +225,7 @@ function ControlStock() {
   }
 
   return (
-    <form className="card form" style={{ maxWidth: 560 }} onSubmit={guardar}>
+    <form className="card form" onSubmit={guardar}>
       <div className="card-head" style={{ marginBottom: 0 }}><h2>Control de stock</h2></div>
       <label className="fila-switch">
         <button type="button" className={`switch ${activo ? 'on' : ''}`} role="switch" aria-checked={activo}
@@ -301,7 +301,7 @@ export default function Configuracion() {
       {actual === 'listas' && <Listas />}
       {actual === 'importar' && <Importar />}
       {actual === 'empresa' && (
-        <div className="grid">
+        <div className="grid grid-empresa">
           <DatosEmpresa />
           <ComprobanteVenta />
           <ControlStock />

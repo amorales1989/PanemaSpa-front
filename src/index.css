@@ -614,6 +614,8 @@ button.opcion-registro { font: inherit; text-align: left; width: 100%; }
 
 /* ---------- Configuración ---------- */
 .grid-listas { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; }
+/* Configuración → Empresa: las tarjetas ocupan el ancho en columnas (una sola en el teléfono) */
+.grid-empresa { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: start; }
 .lista-editable ul { list-style: none; margin: 0 0 12px; padding: 0; }
 .lista-editable li { display: flex; align-items: center; gap: 6px; padding: 7px 0; border-top: 1px solid var(--line); min-height: 46px; }
 .lista-editable li:first-child { border-top: 0; }
