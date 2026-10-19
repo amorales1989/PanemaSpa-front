@@ -29,6 +29,7 @@ export default function Productos() {
   const tab = params.get('tab') === 'insumos' ? 'insumos' : 'productos'
   const gestiona = puede(tab === 'insumos' ? 'insumos.gestionar' : 'productos.gestionar')
   const ajustaPrecios = puede('precios.ajustar')
+  const verCostos = puede('productos.ver_costos')
   const [periodo, setPeriodo] = useState('30d')
   const [busqueda, setBusqueda] = useState('')
   const [categoria, setCategoria] = useState('Todas')
@@ -171,6 +172,7 @@ export default function Productos() {
                     <input type="checkbox" checked={todosMarcados} onChange={marcarTodos} aria-label="Seleccionar todos los productos visibles" />
                   </th>}
                   <th>Producto</th><th className="num ocultar-movil">Precio</th>
+                  {verCostos && <th className="num ocultar-movil">Costo</th>}
                   <th className="num ocultar-movil">Vendidos</th><th className="num">Ventas</th><th className="num ocultar-movil">Margen est.</th>
                   <th className="num ocultar-medio">Merma</th><th />
                 </tr>
@@ -188,6 +190,12 @@ export default function Productos() {
                       </div>
                     </td>
                     <td className="num ocultar-movil">{dinero(p.precio)}{p.unidad !== 'un' && <span className="sub"> /{p.unidad}</span>}</td>
+                    {verCostos && (
+                      <td className="num ocultar-movil">
+                        {p.costo > 0 ? dinero(p.costo) : <span className="sub">—</span>}
+                        {p.receta.length > 0 && <div className="sub" title={p.receta.map((r) => `${fmtNum(r.cantidad)} ${r.unidad} ${r.nombre}`).join(' · ')}>receta · {p.receta.length} {p.receta.length === 1 ? 'insumo' : 'insumos'}</div>}
+                      </td>
+                    )}
                     <td className="num ocultar-movil">{cant(p.vendidos, p.unidad)}</td>
                     <td className="num"><b>{dinero(p.ventas)}</b>{hayVariacion(p.tendencia) && <div className="sub-delta"><Delta valor={p.tendencia} /></div>}</td>
                     <td className="num ocultar-movil">
@@ -230,7 +238,7 @@ export default function Productos() {
         </table>
         {visibles.length === 0 && <div className="vacio">No hay resultados.</div>}
       </div>
-      {tab === 'productos' && <p className="sub" style={{ marginTop: 10 }}>Margen estimado = ventas − (unidades vendidas × costo). Los productos sin costo no se cuentan. Marca productos con la casilla para cambiar varios precios a la vez.</p>}
+      {tab === 'productos' && <p className="sub" style={{ marginTop: 10 }}>Margen estimado = ventas − (unidades vendidas × costo). Los productos sin costo no se cuentan. Con receta, el costo sale de sus insumos. Marca productos con la casilla para cambiar varios precios a la vez.</p>}
 
       {tab === 'productos' && seleccion.size > 0 && (
         <div className="barra-seleccion" role="region" aria-label="Productos seleccionados">

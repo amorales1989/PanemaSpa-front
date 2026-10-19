@@ -19,6 +19,8 @@ export const productoDesdeApi = (p) => ({
   id: p.id, codigo: p.codigo, nombre: p.nombre, categoria: p.categoria ?? 'Sin categoría', categoriaId: p.categoriaId,
   unidad: p.unidad, precio: p.precio, costo: p.costo, activo: p.activo,
   imagen: urlArchivo(p.imagenUrl),
+  // Insumos que lleva una unidad (o un kilo) del producto; el precio solo viene a quien ve costos
+  receta: (p.receta ?? []).map((r) => ({ id: r.insumoId, codigo: r.codigo, nombre: r.nombre, unidad: r.unidad, cantidad: Number(r.cantidad), precio: r.precio })),
 })
 
 export const insumoDesdeApi = (i) => ({

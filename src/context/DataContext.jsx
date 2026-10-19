@@ -110,6 +110,17 @@ export function DataProvider({ children }) {
 
   const actualizar = (clave, fn) => setDatos((d) => ({ ...d, [clave]: fn(d[clave]) }))
 
+  // Vuelve a pedir insumos y productos (el costo de los productos con receta depende del precio de los insumos)
+  // Si falla, no importa: lo guardado ya quedó y se ve al recargar
+  const refrescarCatalogo = useCallback(async () => {
+    const [insumos, productos] = await Promise.all([
+      puede('insumos.ver') ? api('/insumos').catch(() => null) : null,
+      puede('productos.ver') ? api('/productos').catch(() => null) : null,
+    ])
+    if (insumos) actualizar('insumos', () => insumos.map(insumoDesdeApi))
+    if (productos) actualizar('productos', () => productos.map(productoDesdeApi))
+  }, [puede])
+
   // ---------- Movimientos ----------
 
   // Devuelve una promesa: el formulario espera la respuesta para cerrarse o mostrar el error
@@ -131,11 +142,8 @@ export function DataProvider({ children }) {
       if (tipo === 'egresos') {
         const e = await api('/egresos', { metodo: 'POST', body: egresoHaciaApi(item, config, hoyIso), headers: clave })
         if (puede('egresos.ver')) actualizar('egresos', (l) => [egresoDesdeApi(e), ...l].sort(ordenarRecientes))
-        // La compra actualizó el precio de los insumos: se refrescan
-        if (e.items.length && puede('insumos.ver')) {
-          const insumos = await api('/insumos')
-          actualizar('insumos', () => insumos.map(insumoDesdeApi))
-        }
+        // La compra actualizó el precio de los insumos (y el costo de los productos con receta): se refrescan
+        if (e.items.length) await refrescarCatalogo()
         avisar('Egreso registrado')
         return
       }
@@ -145,7 +153,7 @@ export function DataProvider({ children }) {
     } catch (e) {
       throw new Error(mensajeDe(e))
     }
-  }, [config, hoyIso, puede, zona, avisar, empresa])
+  }, [config, hoyIso, puede, zona, avisar, empresa, refrescarCatalogo])
 
   // Los movimientos no se borran: se anulan (queda el registro de quién y por qué)
   const anular = useCallback(async (tipo, id, motivo) => {
@@ -202,6 +210,7 @@ export function DataProvider({ children }) {
     const cuerpo = {
       codigo: producto.codigo, nombre: producto.nombre, categoria: producto.categoria, unidad: producto.unidad,
       precio: producto.precio, ...(producto.costo !== undefined && { costo: producto.costo }),
+      ...(producto.receta && { receta: producto.receta.map((r) => ({ insumoId: r.id, cantidad: r.cantidad })) }),
     }
     try {
       let p = productoDesdeApi(await api(existe ? `/productos/${producto.id}` : '/productos', { metodo: existe ? 'PATCH' : 'POST', body: cuerpo }))
@@ -226,11 +235,13 @@ export function DataProvider({ children }) {
     try {
       const i = insumoDesdeApi(await api(existe ? `/insumos/${insumo.id}` : '/insumos', { metodo: existe ? 'PATCH' : 'POST', body: cuerpo }))
       actualizar('insumos', (l) => (existe ? l.map((x) => (x.id === i.id ? i : x)) : [...l, i]))
+      // Un cambio de precio o de nombre se refleja en las recetas de los productos
+      if (existe) await refrescarCatalogo()
       avisar('Insumo guardado')
     } catch (e) {
       throw new Error(mensajeDe(e))
     }
-  }, [datos, avisar])
+  }, [datos, avisar, refrescarCatalogo])
 
   // Se quita del catálogo; las ventas, compras y mermas ya registradas se mantienen
   const eliminarProducto = useCallback(async (id) => {

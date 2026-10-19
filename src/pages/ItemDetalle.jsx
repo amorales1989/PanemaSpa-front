@@ -20,6 +20,44 @@ function TooltipCantidad({ active, payload, unidad }) {
   return <div className="tooltip"><strong>{payload[0].payload.rango}</strong>{cant(payload[0].value, unidad)}</div>
 }
 
+// Insumos que lleva el producto y cuánto aporta cada uno al costo
+function CardReceta({ producto, insumos, verCostos }) {
+  const { receta, unidad, precio, costo } = producto
+  const filas = receta.map((r) => {
+    const ins = insumos.find((i) => i.id === r.id)
+    return { ...r, precio: ins?.precio ?? r.precio }
+  })
+  const margen = precio - (costo ?? 0)
+  return (
+    <div className="card">
+      <div className="card-head"><h2>Receta</h2><span className="sub">Por {unidad === 'kg' ? 'kilo' : 'unidad'}</span></div>
+      {filas.length ? (
+        <table className="tabla">
+          <tbody>
+            {filas.map((r) => (
+              <tr key={r.id}>
+                <td>{insumos.some((i) => i.id === r.id) ? <Link to={`/productos/insumo/${r.id}`} className="link">{r.nombre}</Link> : r.nombre}
+                  {verCostos && r.precio !== undefined && <div className="sub">{dinero(r.precio)} / {r.unidad}</div>}</td>
+                <td className="num">{fmtNum(r.cantidad)} {r.unidad}</td>
+                {verCostos && <td className="num"><b>{r.precio !== undefined ? dinero(r.cantidad * r.precio) : '—'}</b></td>}
+              </tr>
+            ))}
+          </tbody>
+          {verCostos && (
+            <tfoot>
+              <tr><td>Costo</td><td /><td className="num"><b>{dinero(costo)}</b></td></tr>
+              <tr><td>Precio de venta</td><td /><td className="num">{dinero(precio)}</td></tr>
+              <tr><td>Margen</td><td /><td className="num" style={{ color: margen >= 0 ? 'var(--ingreso)' : 'var(--egreso)' }}><b>{dinero(margen)}</b>{precio > 0 && <span className="sub"> · {porcentaje((margen / precio) * 100, 0)}</span>}</td></tr>
+            </tfoot>
+          )}
+        </table>
+      ) : (
+        <div className="sub">Sin receta. {verCostos && `Costo cargado a mano: ${dinero(costo ?? 0)}.`} Edita el producto para indicar qué insumos lleva y el costo se calculará solo.</div>
+      )}
+    </div>
+  )
+}
+
 export default function ItemDetalle() {
   const { tipo, id } = useParams()
   const { ingresos, egresos, mermas, hoy, productos, insumos, historialPrecios, puede } = useDatos()
@@ -136,6 +174,7 @@ export default function ItemDetalle() {
         </div>
 
         <div className="stack">
+          {esProducto && (ref.receta.length > 0 || puede('productos.gestionar')) && <CardReceta producto={ref} insumos={insumos} verCostos={puede('productos.ver_costos')} />}
           {esProducto && (
             <div className="card">
               <div className="card-head"><h2>Historial de precios</h2><History size={18} color="var(--muted)" /></div>
