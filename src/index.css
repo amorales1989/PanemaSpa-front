@@ -153,6 +153,14 @@ h1, h2, h3 { margin: 0; }
   border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; color: var(--muted);
 }
 .search input { border: 0; outline: 0; background: transparent; padding: 10px 0; flex: 1; color: var(--ink); }
+/* Filtros en la barra (Productos): categoría como lista y "Por reponer" como botón que se marca */
+.input.select-toolbar { width: auto; max-width: 240px; padding-top: 10px; padding-bottom: 10px; font-size: 14px; background: var(--surface); }
+.btn.btn-reponer { background: var(--surface); border: 1px solid var(--line); color: var(--muted); padding: 10px 14px; font-size: 14px; }
+.btn.btn-reponer.hay { background: var(--egreso-soft); border-color: #e9b5ab; color: var(--egreso); }
+.btn.btn-reponer.on { background: var(--egreso); border-color: var(--egreso); color: #fff; }
+@media (max-width: 520px) {
+  .input.select-toolbar { max-width: none; flex: 1; }
+}
 
 .resumen-filtro { display: flex; gap: 24px; flex-wrap: wrap; padding: 16px 20px; margin-bottom: 16px; }
 .resumen-filtro div { display: flex; flex-direction: column; gap: 2px; }

@@ -94,9 +94,9 @@ export default function Productos() {
   const abrirReposicion = (lista) => setReponiendo(lista.map((p) => ({ ...p, tipo: tab === 'insumos' ? 'insumo' : 'producto' })))
   // Celda de stock: en rojo si está en o bajo el mínimo; los productos con receta lo llevan en sus insumos
   const celdaStock = (p) => (llevaStock(p) ? (
-    <td className="num ocultar-movil">
+    <td className="num ocultar-movil" style={{ whiteSpace: 'nowrap' }}>
       <span style={porReponer(p) ? { color: 'var(--egreso)', fontWeight: 700 } : undefined}>{cantStock(p.stock, p.unidad)}</span>
-      {p.stockMinimo != null && <div className="sub">mín. {cantStock(p.stockMinimo, p.unidad)}</div>}
+      {p.stockMinimo != null && <div className="sub" style={{ whiteSpace: 'nowrap' }}>mín. {cantStock(p.stockMinimo, p.unidad)}</div>}
     </td>
   ) : <td className="num ocultar-movil"><span className="sub" title="Al venderlo se descuentan sus insumos">en insumos</span></td>)
   const etiquetaReponer = (p) => controlStock && porReponer(p) && <span className="badge mal" style={{ marginLeft: 6 }}>Reponer</span>
@@ -160,6 +160,7 @@ export default function Productos() {
         </div>
       </div>
 
+      {/* Una sola barra: pestaña, búsqueda, categoría y "Por reponer" */}
       <div className="toolbar">
         <div className="segmented">
           <button className={tab === 'productos' ? 'on' : ''} onClick={() => cambiarTab('productos')}>Productos ({productos.length})</button>
@@ -169,29 +170,20 @@ export default function Productos() {
           <Search size={18} />
           <input placeholder="Buscar por nombre, código o categoría..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
         </label>
-      </div>
-
-      {controlStock && aReponer.length > 0 && !soloReponer && (
-        <div className="alerta" style={{ marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }} role="status">
-          <AlertTriangle size={18} />
-          <span style={{ flex: 1 }}>
-            <b>{aReponer.length} {tab === 'insumos' ? (aReponer.length === 1 ? 'insumo' : 'insumos') : (aReponer.length === 1 ? 'producto' : 'productos')}</b> en o bajo su stock mínimo.
-          </span>
-          <button className="btn btn-ghost" onClick={() => filtrarReponer(true)}>Ver</button>
-          {gestiona && <button className="btn btn-primary" onClick={() => abrirReposicion(aReponer)}><PackagePlus size={16} /> Reponer</button>}
-        </div>
-      )}
-
-      <div className="chips" style={{ marginBottom: 16 }}>
+        <select className="input select-toolbar" value={categoria} aria-label="Categoría" onChange={(e) => setCategoria(e.target.value)}>
+          {categorias.map((c) => <option key={c} value={c}>{c === 'Todas' ? 'Todas las categorías' : c}</option>)}
+        </select>
         {controlStock && (
-          <button className={`chip ${soloReponer ? 'on' : ''}`} onClick={() => filtrarReponer(!soloReponer)}>
-            <AlertTriangle size={13} style={{ verticalAlign: -2 }} /> Por reponer ({aReponer.length})
+          <button className={`btn btn-reponer ${soloReponer ? 'on' : ''} ${aReponer.length ? 'hay' : ''}`} aria-pressed={soloReponer}
+            onClick={() => filtrarReponer(!soloReponer)} title="Mostrar solo lo que está en o bajo su stock mínimo">
+            <AlertTriangle size={16} /> Por reponer ({aReponer.length})
           </button>
         )}
         {soloReponer && gestiona && visibles.length > 0 && (
-          <button className="chip" onClick={() => abrirReposicion(visibles)}><PackagePlus size={13} style={{ verticalAlign: -2 }} /> Reponer {visibles.length === 1 ? 'este' : `estos ${visibles.length}`}</button>
+          <button className="btn btn-primary" onClick={() => abrirReposicion(visibles)}>
+            <PackagePlus size={16} /> Reponer {visibles.length === 1 ? 'este' : `estos ${visibles.length}`}
+          </button>
         )}
-        {categorias.map((c) => <button key={c} className={`chip ${categoria === c ? 'on' : ''}`} onClick={() => setCategoria(c)}>{c}</button>)}
       </div>
 
       <div className="card resumen-productos">
