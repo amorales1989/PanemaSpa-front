@@ -72,7 +72,7 @@ function Receta({ receta, setReceta, insumos, porKilo, error }) {
 
 // Crear o editar un producto (tipo="producto") o un insumo (tipo="insumo")
 export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
-  const { productos, insumos, promos, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, setImagen, listas } = useDatos()
+  const { productos, insumos, promos, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, setImagen, listas, controlStock, ajustarStock } = useDatos()
   const esProducto = tipo === 'producto'
   const { confirmar, avisar } = useDialogo()
   const lista = esProducto ? productos : insumos
@@ -96,6 +96,8 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
   const [receta, setReceta] = useState(() => (item?.receta ?? []).map((r) => ({ id: r.id, cantidad: fmtNum(r.cantidad) })))
   // Solo quien ve los insumos puede armar la receta
   const conReceta = esProducto && insumos.length > 0
+  const [stockMinimo, setStockMinimo] = useState(item?.stockMinimo != null ? fmtNum(item.stockMinimo) : '')
+  const [stockInicial, setStockInicial] = useState('')
   const [intentado, setIntentado] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [errorServidor, setErrorServidor] = useState('')
@@ -103,6 +105,8 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
   const categoriaFinal = creandoCategoria ? nuevaCategoria.trim() : categoria
   const precioNum = parseInt(precio) || 0
   const usaReceta = conReceta && receta.length > 0
+  // Con control de stock: los insumos y los productos sin receta llevan stock y mínimo
+  const conStock = controlStock && !usaReceta
   const costoReceta = receta.reduce((t, r) => t + num(r.cantidad) * (insumos.find((i) => i.id === r.id)?.precio ?? 0), 0)
   const costoNum = usaReceta ? costoReceta : parseInt(costo) || 0
   const usadoPor = [...productos, ...insumos, ...promos].find((p) => String(p.codigo) === codigo && p.id !== id)
@@ -114,6 +118,8 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
     categoria: !categoriaFinal && 'Elige o escribe una categoría',
     precio: !precioNum && (esProducto ? 'Falta el precio de venta' : 'Falta el precio de compra'),
     costo: esProducto && !usaReceta && costoNum > precioNum && precioNum > 0 && 'El costo es mayor que el precio de venta',
+    stockInicial: conStock && nuevo && unidad === 'un' && !Number.isInteger(num(stockInicial)) && 'El stock inicial va en unidades enteras',
+    stockMinimo: conStock && unidad === 'un' && !Number.isInteger(num(stockMinimo)) && 'El stock mínimo va en unidades enteras',
     receta: usaReceta && receta.some((r) => !(num(r.cantidad) > 0)) && 'Indica la cantidad de cada insumo de la receta',
   }
   const errores = Object.values(falta).filter(Boolean)
@@ -131,18 +137,26 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
       setIntentado(true)
       return
     }
-    const datos = { ...item, id, codigo: parseInt(codigo), nombre: nombre.trim(), categoria: categoriaFinal, unidad, precio: precioNum }
+    const datos = {
+      ...item, id, codigo: parseInt(codigo), nombre: nombre.trim(), categoria: categoriaFinal, unidad, precio: precioNum,
+      ...(conStock && { stockMinimo: stockMinimo === '' ? null : num(stockMinimo) }),
+    }
     setGuardando(true)
     setErrorServidor('')
     try {
+      let guardado
       if (esProducto) {
-        await guardarProducto({
+        guardado = await guardarProducto({
           ...datos,
           ...(!usaReceta && { costo: costoNum }), // con receta el costo lo calcula el servidor
           ...(conReceta ? { receta: receta.map((r) => ({ id: r.id, cantidad: num(r.cantidad) })) } : { receta: undefined }),
         })
       }
-      else await guardarInsumo(datos)
+      else guardado = await guardarInsumo(datos)
+      // Stock con el que arranca un ítem nuevo
+      if (nuevo && conStock && num(stockInicial) > 0) {
+        await ajustarStock([{ tipo, id: guardado.id, modo: 'conteo', cantidad: num(stockInicial) }], 'Stock inicial')
+      }
       onClose()
     } catch (err) {
       setErrorServidor(err.message)
@@ -226,6 +240,24 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
           ))}
         </div>
         {conReceta && <Receta receta={receta} setReceta={setReceta} insumos={insumos} porKilo={unidad === 'kg'} error={ver('receta')} />}
+
+        {conStock && (
+          <div className="fila">
+            {nuevo ? (
+              <Campo id="cat-stock-inicial" label={`Stock inicial (${unidad})`} error={ver('stockInicial')} opcional>
+                <input id="cat-stock-inicial" className="input" inputMode="decimal" placeholder="0" value={stockInicial} onChange={(e) => setStockInicial(soloCantidad(e.target.value))} />
+              </Campo>
+            ) : (
+              <Campo id="cat-stock-actual" label="Stock actual">
+                <input id="cat-stock-actual" className="input" readOnly value={`${fmtNum(item.stock)} ${item.unidad}`} title="Se cambia con una reposición o un conteo desde la ficha" />
+              </Campo>
+            )}
+            <Campo id="cat-stock-minimo" label={`Stock mínimo (${unidad})`} error={ver('stockMinimo')} opcional>
+              <input id="cat-stock-minimo" className="input" inputMode="decimal" placeholder="Sin aviso" value={stockMinimo} onChange={(e) => setStockMinimo(soloCantidad(e.target.value))} />
+            </Campo>
+          </div>
+        )}
+        {controlStock && usaReceta && <div className="sub">Con receta, el stock se lleva en sus insumos: al venderlo se descuentan.</div>}
         {esProducto && precioNum > 0 && costoNum > 0 && (
           <div className="total-ticket" style={{ background: margen >= 0 ? 'var(--ingreso-soft)' : 'var(--egreso-soft)' }}>
             <span>Margen {unidad === 'kg' ? 'por kilo' : 'por unidad'}</span>

@@ -206,6 +206,48 @@ function ComprobanteVenta() {
   )
 }
 
+// Llevar stock de productos e insumos y avisar cuando hay que reponer
+function ControlStock() {
+  const { recargarPerfil, empresa } = useAuth()
+  const [activo, setActivo] = useState(!!empresa.controlStock)
+  const [estado, setEstado] = useState({ guardando: false, error: '', listo: false })
+
+  const guardar = async (e) => {
+    e.preventDefault()
+    setEstado({ guardando: true, error: '', listo: false })
+    try {
+      await api('/empresa', { metodo: 'PATCH', body: { controlStock: activo } })
+      await recargarPerfil()
+      setEstado({ guardando: false, error: '', listo: true })
+    } catch (err) {
+      setEstado({ guardando: false, error: err.message, listo: false })
+    }
+  }
+
+  return (
+    <form className="card form" style={{ maxWidth: 560 }} onSubmit={guardar}>
+      <div className="card-head" style={{ marginBottom: 0 }}><h2>Control de stock</h2></div>
+      <label className="fila-switch">
+        <button type="button" className={`switch ${activo ? 'on' : ''}`} role="switch" aria-checked={activo}
+          onClick={() => { setActivo(!activo); setEstado((s) => ({ ...s, listo: false })) }}>
+          <span />
+        </button>
+        Llevar el stock de productos e insumos
+      </label>
+      <ul className="sub" style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4 }}>
+        <li>Las compras suman stock de insumos; las ventas y mermas lo descuentan.</li>
+        <li>Los productos con receta descuentan sus insumos al venderse. Los que no tienen receta (reventa) llevan su propio stock y se reponen a mano.</li>
+        <li>En cada producto o insumo puedes poner un <b>stock mínimo</b>: al llegar a él aparece en “Por reponer”.</li>
+        <li>Al activarlo, el stock parte en cero: carga lo que tienes con un conteo desde Productos.</li>
+      </ul>
+      {estado.error && <div className="alerta-error" role="alert">{estado.error}</div>}
+      <button className="btn btn-primary" disabled={estado.guardando}>
+        <Check size={18} /> {estado.guardando ? 'Guardando…' : estado.listo ? 'Guardado' : 'Guardar'}
+      </button>
+    </form>
+  )
+}
+
 function Listas() {
   const { config, recargarConfig, puede } = useDatos()
   const generales = puede('configuracion.gestionar')
@@ -262,6 +304,7 @@ export default function Configuracion() {
         <div className="grid">
           <DatosEmpresa />
           <ComprobanteVenta />
+          <ControlStock />
         </div>
       )}
     </>

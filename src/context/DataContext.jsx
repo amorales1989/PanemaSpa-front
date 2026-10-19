@@ -3,6 +3,7 @@ import { api } from '../lib/api'
 import { useAuth } from './AuthContext'
 import { masFrecuentes, componentesPromo, precioNormal } from '../lib/items'
 import { isoLocal } from '../lib/format'
+import { porReponer } from '../lib/stock'
 import {
   egresoDesdeApi, egresoHaciaApi, insumoDesdeApi, mermaDesdeApi, mermaHaciaApi, ordenarRecientes,
   productoDesdeApi, promoDesdeApi, ventaDesdeApi, ventaHaciaApi,
@@ -124,6 +125,8 @@ export function DataProvider({ children }) {
   // ---------- Movimientos ----------
 
   // Devuelve una promesa: el formulario espera la respuesta para cerrarse o mostrar el error
+  const controlStock = !!empresa?.controlStock
+
   const agregar = useCallback(async (tipo, item) => {
     const clave = { 'Idempotency-Key': crypto.randomUUID() }
     try {
@@ -137,6 +140,8 @@ export function DataProvider({ children }) {
           setExito({ clave: marca, monto: v.total })
           setTimeout(() => setExito((e) => (e?.clave === marca ? null : e)), 1800)
         }
+        // El stock se actualiza de fondo: la caja no espera
+        if (controlStock) refrescarCatalogo()
         return venta // para imprimir el comprobante
       }
       if (tipo === 'egresos') {
@@ -149,11 +154,12 @@ export function DataProvider({ children }) {
       }
       const m = await api('/mermas', { metodo: 'POST', body: mermaHaciaApi(item, config, hoyIso), headers: clave })
       if (puede('mermas.ver')) actualizar('mermas', (l) => [mermaDesdeApi(m), ...l].sort(ordenarRecientes))
+      if (controlStock) refrescarCatalogo()
       avisar('Merma registrada')
     } catch (e) {
       throw new Error(mensajeDe(e))
     }
-  }, [config, hoyIso, puede, zona, avisar, empresa, refrescarCatalogo])
+  }, [config, hoyIso, puede, zona, avisar, empresa, refrescarCatalogo, controlStock])
 
   // Los movimientos no se borran: se anulan (queda el registro de quién y por qué)
   const anular = useCallback(async (tipo, id, motivo) => {
@@ -164,8 +170,9 @@ export function DataProvider({ children }) {
       throw new Error(mensajeDe(e))
     }
     actualizar(tipo, (l) => l.filter((x) => x.id !== id))
+    if (controlStock) refrescarCatalogo() // la anulación devuelve el stock
     avisar('Registro anulado')
-  }, [avisar])
+  }, [avisar, controlStock, refrescarCatalogo])
 
   // ---------- Catálogo ----------
 
@@ -210,6 +217,7 @@ export function DataProvider({ children }) {
     const cuerpo = {
       codigo: producto.codigo, nombre: producto.nombre, categoria: producto.categoria, unidad: producto.unidad,
       precio: producto.precio, ...(producto.costo !== undefined && { costo: producto.costo }),
+      ...(producto.stockMinimo !== undefined && { stockMinimo: producto.stockMinimo }),
       ...(producto.receta && { receta: producto.receta.map((r) => ({ insumoId: r.id, cantidad: r.cantidad })) }),
     }
     try {
@@ -224,6 +232,7 @@ export function DataProvider({ children }) {
         setConfig(await api('/config')) // se creó una categoría nueva
       }
       avisar('Producto guardado')
+      return p
     } catch (e) {
       throw new Error(mensajeDe(e))
     }
@@ -231,13 +240,17 @@ export function DataProvider({ children }) {
 
   const guardarInsumo = useCallback(async (insumo) => {
     const existe = datos.insumos.some((p) => p.id === insumo.id)
-    const cuerpo = { codigo: insumo.codigo, nombre: insumo.nombre, categoria: insumo.categoria, unidad: insumo.unidad, precio: insumo.precio }
+    const cuerpo = {
+      codigo: insumo.codigo, nombre: insumo.nombre, categoria: insumo.categoria, unidad: insumo.unidad, precio: insumo.precio,
+      ...(insumo.stockMinimo !== undefined && { stockMinimo: insumo.stockMinimo }),
+    }
     try {
       const i = insumoDesdeApi(await api(existe ? `/insumos/${insumo.id}` : '/insumos', { metodo: existe ? 'PATCH' : 'POST', body: cuerpo }))
       actualizar('insumos', (l) => (existe ? l.map((x) => (x.id === i.id ? i : x)) : [...l, i]))
       // Un cambio de precio o de nombre se refleja en las recetas de los productos
       if (existe) await refrescarCatalogo()
       avisar('Insumo guardado')
+      return i
     } catch (e) {
       throw new Error(mensajeDe(e))
     }
@@ -281,6 +294,34 @@ export function DataProvider({ children }) {
     const h = await api(`/productos/${productoId}/historial-precios`)
     return h.map((x) => ({ fecha: x.createdAt.slice(0, 10), anterior: x.precioAnterior, nuevo: x.precioNuevo, motivo: x.motivo, usuario: x.usuario }))
   }, [])
+
+  // ---------- Stock ----------
+
+  // items: [{ tipo: 'producto' | 'insumo', id, modo: 'reposicion' | 'conteo', cantidad }]
+  const ajustarStock = useCallback(async (items, motivo) => {
+    try {
+      await api('/stock/ajustes', {
+        metodo: 'POST',
+        body: { motivo, items: items.map((i) => ({ [i.tipo === 'producto' ? 'productoId' : 'insumoId']: i.id, modo: i.modo, cantidad: i.cantidad })) },
+      })
+    } catch (e) {
+      throw new Error(mensajeDe(e))
+    }
+    await refrescarCatalogo()
+    avisar('Stock actualizado')
+  }, [avisar, refrescarCatalogo])
+
+  const movimientosStock = useCallback(async (tipo, id) => {
+    const m = await api(`/stock/movimientos?${tipo === 'producto' ? 'productoId' : 'insumoId'}=${id}`)
+    return m.map((x) => ({ ...x, cantidad: Number(x.cantidad) }))
+  }, [])
+
+  // Lo que está en o bajo su mínimo
+  const reponer = useMemo(() => {
+    if (!controlStock || !datos) return { productos: [], insumos: [] }
+    const activos = (l) => l.filter((p) => p.activo !== false && porReponer(p))
+    return { productos: activos(datos.productos), insumos: activos(datos.insumos) }
+  }, [controlStock, datos])
 
   // ---------- Fotos ----------
 
@@ -358,11 +399,12 @@ export function DataProvider({ children }) {
     () => ({
       ...datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen,
       guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios,
+      controlStock, ajustarStock, movimientosStock, reponer,
       listas, config, recargarConfig, puede, hoy, recargar: cargar,
     }),
     // hoy cambia en cada render; se usa solo su valor del día
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios, listas, config, recargarConfig, puede, hoyIso, cargar],
+    [datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios, controlStock, ajustarStock, movimientosStock, reponer, listas, config, recargarConfig, puede, hoyIso, cargar],
   )
 
   if (error) {

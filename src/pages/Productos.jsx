@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Search, ArrowUpRight, ArrowDownRight, ChevronRight, Plus, Pencil, Percent, X } from 'lucide-react'
+import { Search, ArrowUpRight, ArrowDownRight, ChevronRight, Plus, Pencil, Percent, X, AlertTriangle, PackagePlus } from 'lucide-react'
 import { useDatos, rango, enRango } from '../context/DataContext'
 import { SelectorPeriodo } from '../components/ui'
 import BotonPDF from '../components/BotonPDF'
 import ImagenProducto from '../components/ImagenProducto'
 import CatalogoForm from '../components/CatalogoForm'
 import AjustePrecios from '../components/AjustePrecios'
+import AjusteStock from '../components/AjusteStock'
+import { cantStock, llevaStock, porReponer } from '../lib/stock'
 import { statsProductos, statsInsumos } from '../lib/stats'
 import { dinero } from '../lib/format'
 import { fmtNum } from '../lib/items'
@@ -23,7 +25,7 @@ const hayVariacion = (v) => Number.isFinite(v) && Math.abs(v) >= 0.5
 const cant = (n, unidad) => `${fmtNum(Math.round(n * 10) / 10)} ${unidad}`
 
 export default function Productos() {
-  const { ingresos, egresos, mermas, productos, insumos, puede } = useDatos()
+  const { ingresos, egresos, mermas, productos, insumos, puede, controlStock, reponer } = useDatos()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') === 'insumos' ? 'insumos' : 'productos'
@@ -36,6 +38,9 @@ export default function Productos() {
   const [seleccion, setSeleccion] = useState(() => new Set()) // ids de productos marcados
   const [editando, setEditando] = useState(null) // null | 'nuevo' | item
   const [ajustando, setAjustando] = useState(null) // lista de productos a ajustar
+  const [reponiendo, setReponiendo] = useState(null) // ítems a reponer
+  const soloReponer = controlStock && params.get('reponer') === '1'
+  const aReponer = tab === 'productos' ? reponer.productos : reponer.insumos
 
   const filas = useMemo(() => {
     const r = rango(periodo)
@@ -53,6 +58,7 @@ export default function Productos() {
   const q = busqueda.trim().toLowerCase()
   const visibles = filas.filter((p) =>
     (categoria === 'Todas' || p.categoria === categoria) &&
+    (!soloReponer || porReponer(p)) &&
     (!q || p.nombre.toLowerCase().includes(q) || String(p.codigo).startsWith(q) || p.categoria.toLowerCase().includes(q)))
   const categorias = ['Todas', ...new Set((tab === 'productos' ? productos : insumos).map((p) => p.categoria))]
 
@@ -73,10 +79,26 @@ export default function Productos() {
     return n
   })
   const cambiarTab = (t) => {
-    setParams(t === 'insumos' ? { tab: 'insumos' } : {})
+    setParams({ ...(t === 'insumos' && { tab: 'insumos' }), ...(soloReponer && { reponer: '1' }) })
     setCategoria('Todas')
     setSeleccion(new Set())
   }
+  const filtrarReponer = (si) => {
+    const n = new URLSearchParams(params)
+    if (si) n.set('reponer', '1')
+    else n.delete('reponer')
+    setParams(n)
+  }
+  const abrirReposicion = (lista) => setReponiendo(lista.map((p) => ({ ...p, tipo: tab === 'insumos' ? 'insumo' : 'producto' })))
+  // Celda de stock: en rojo si está en o bajo el mínimo; los productos con receta lo llevan en sus insumos
+  const celdaStock = (p) => (llevaStock(p) ? (
+    <td className="num ocultar-movil">
+      <span style={porReponer(p) ? { color: 'var(--egreso)', fontWeight: 700 } : undefined}>{cantStock(p.stock, p.unidad)}</span>
+      {p.stockMinimo != null && <div className="sub">mín. {cantStock(p.stockMinimo, p.unidad)}</div>}
+    </td>
+  ) : <td className="num ocultar-movil"><span className="sub" title="Al venderlo se descuentan sus insumos">en insumos</span></td>)
+  const etiquetaReponer = (p) => controlStock && porReponer(p) && <span className="badge mal" style={{ marginLeft: 6 }}>Reponer</span>
+
   const editar = (e, p) => {
     e.stopPropagation()
     setEditando((tab === 'productos' ? productos : insumos).find((x) => x.id === p.id))
@@ -142,7 +164,26 @@ export default function Productos() {
         </label>
       </div>
 
+      {controlStock && aReponer.length > 0 && !soloReponer && (
+        <div className="alerta" style={{ marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }} role="status">
+          <AlertTriangle size={18} />
+          <span style={{ flex: 1 }}>
+            <b>{aReponer.length} {tab === 'insumos' ? (aReponer.length === 1 ? 'insumo' : 'insumos') : (aReponer.length === 1 ? 'producto' : 'productos')}</b> en o bajo su stock mínimo.
+          </span>
+          <button className="btn btn-ghost" onClick={() => filtrarReponer(true)}>Ver</button>
+          {gestiona && <button className="btn btn-primary" onClick={() => abrirReposicion(aReponer)}><PackagePlus size={16} /> Reponer</button>}
+        </div>
+      )}
+
       <div className="chips" style={{ marginBottom: 16 }}>
+        {controlStock && (
+          <button className={`chip ${soloReponer ? 'on' : ''}`} onClick={() => filtrarReponer(!soloReponer)}>
+            <AlertTriangle size={13} style={{ verticalAlign: -2 }} /> Por reponer ({aReponer.length})
+          </button>
+        )}
+        {soloReponer && gestiona && visibles.length > 0 && (
+          <button className="chip" onClick={() => abrirReposicion(visibles)}><PackagePlus size={13} style={{ verticalAlign: -2 }} /> Reponer {visibles.length === 1 ? 'este' : `estos ${visibles.length}`}</button>
+        )}
         {categorias.map((c) => <button key={c} className={`chip ${categoria === c ? 'on' : ''}`} onClick={() => setCategoria(c)}>{c}</button>)}
       </div>
 
@@ -173,6 +214,7 @@ export default function Productos() {
                   </th>}
                   <th>Producto</th><th className="num ocultar-movil">Precio</th>
                   {verCostos && <th className="num ocultar-movil">Costo</th>}
+                  {controlStock && <th className="num ocultar-movil">Stock</th>}
                   <th className="num ocultar-movil">Vendidos</th><th className="num">Ventas</th><th className="num ocultar-movil">Margen est.</th>
                   <th className="num ocultar-medio">Merma</th><th />
                 </tr>
@@ -186,7 +228,7 @@ export default function Productos() {
                     <td>
                       <div className="celda-producto">
                         <ImagenProducto producto={{ ...p, tipo: 'producto' }} tamano={40} />
-                        <div><b>{p.nombre}</b><div className="sub">#{p.codigo} · {p.categoria}</div></div>
+                        <div><b>{p.nombre}</b>{etiquetaReponer(p)}<div className="sub">#{p.codigo} · {p.categoria}</div></div>
                       </div>
                     </td>
                     <td className="num ocultar-movil">{dinero(p.precio)}{p.unidad !== 'un' && <span className="sub"> /{p.unidad}</span>}</td>
@@ -196,6 +238,7 @@ export default function Productos() {
                         {p.receta.length > 0 && <div className="sub" title={p.receta.map((r) => `${fmtNum(r.cantidad)} ${r.unidad} ${r.nombre}`).join(' · ')}>receta · {p.receta.length} {p.receta.length === 1 ? 'insumo' : 'insumos'}</div>}
                       </td>
                     )}
+                    {controlStock && celdaStock(p)}
                     <td className="num ocultar-movil">{cant(p.vendidos, p.unidad)}</td>
                     <td className="num"><b>{dinero(p.ventas)}</b>{hayVariacion(p.tendencia) && <div className="sub-delta"><Delta valor={p.tendencia} /></div>}</td>
                     <td className="num ocultar-movil">
@@ -214,14 +257,15 @@ export default function Productos() {
             <>
               <thead>
                 <tr>
-                  <th>Insumo</th><th className="num ocultar-movil">Comprado</th><th className="num">Gasto</th>
+                  <th>Insumo</th>{controlStock && <th className="num ocultar-movil">Stock</th>}<th className="num ocultar-movil">Comprado</th><th className="num">Gasto</th>
                   <th className="num ocultar-movil">Precio actual</th><th className="num ocultar-medio">Merma</th><th />
                 </tr>
               </thead>
               <tbody>
                 {visibles.map((p) => (
                   <tr key={p.id} onClick={() => navigate(`/productos/insumo/${p.id}`)}>
-                    <td><b>{p.nombre}</b><div className="sub">#{p.codigo} · {p.categoria}</div></td>
+                    <td><b>{p.nombre}</b>{etiquetaReponer(p)}<div className="sub">#{p.codigo} · {p.categoria}</div></td>
+                    {controlStock && celdaStock(p)}
                     <td className="num ocultar-movil">{cant(p.comprado, p.unidad)}</td>
                     <td className="num"><b>{dinero(p.gasto)}</b></td>
                     <td className="num ocultar-movil">{dinero(p.precio)}<span className="sub"> /{p.unidad}</span>{hayVariacion(p.variacion) && <div className="sub-delta"><Delta valor={p.variacion} subirEsBueno={false} /></div>}</td>
@@ -236,7 +280,7 @@ export default function Productos() {
             </>
           )}
         </table>
-        {visibles.length === 0 && <div className="vacio">No hay resultados.</div>}
+        {visibles.length === 0 && <div className="vacio">{soloReponer ? 'Nada por reponer: todo está sobre su mínimo.' : 'No hay resultados.'}</div>}
       </div>
       {tab === 'productos' && <p className="sub" style={{ marginTop: 10 }}>Margen estimado = ventas − (unidades vendidas × costo). Los productos sin costo no se cuentan. Con receta, el costo sale de sus insumos. Marca productos con la casilla para cambiar varios precios a la vez.</p>}
 
@@ -253,6 +297,7 @@ export default function Productos() {
       {editando && (
         <CatalogoForm tipo={tab === 'insumos' ? 'insumo' : 'producto'} item={editando === 'nuevo' ? null : editando} onClose={() => setEditando(null)} />
       )}
+      {reponiendo && <AjusteStock items={reponiendo} onClose={() => setReponiendo(null)} />}
       {ajustando && <AjustePrecios productos={ajustando} onClose={() => setAjustando(null)} onAplicado={() => setSeleccion(new Set())} />}
     </>
   )

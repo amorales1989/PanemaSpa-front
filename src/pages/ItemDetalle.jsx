@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, Navigate } from 'react-router-dom'
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { ArrowLeft, ShoppingBag, Wallet, PiggyBank, PackageX, Truck, Tag, Pencil, Percent, History } from 'lucide-react'
+import { ArrowLeft, ShoppingBag, Wallet, PiggyBank, PackageX, Truck, Tag, Pencil, Percent, History, PackagePlus } from 'lucide-react'
 import CatalogoForm from '../components/CatalogoForm'
 import ImagenProducto from '../components/ImagenProducto'
 import AjustePrecios from '../components/AjustePrecios'
+import AjusteStock from '../components/AjusteStock'
+import { ORIGENES, cantStock, llevaStock, porReponer } from '../lib/stock'
 import { useDatos, rango, enRango } from '../context/DataContext'
 import FotoProducto from '../components/FotoProducto'
 import { Kpi, SelectorPeriodo, TooltipDinero } from '../components/ui'
@@ -20,12 +22,50 @@ function TooltipCantidad({ active, payload, unidad }) {
   return <div className="tooltip"><strong>{payload[0].payload.rango}</strong>{cant(payload[0].value, unidad)}</div>
 }
 
+// Stock actual, mínimo y últimos movimientos (con control de stock activo)
+function CardStock({ tipo, item, gestiona, hoy }) {
+  const { movimientosStock } = useDatos()
+  const [movs, setMovs] = useState([])
+  const [ajustando, setAjustando] = useState(false)
+  useEffect(() => {
+    movimientosStock(tipo, item.id).then(setMovs).catch(() => setMovs([]))
+  }, [tipo, item.id, item.stock, movimientosStock])
+  const bajo = porReponer(item)
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <h2>Stock</h2>
+        {gestiona && <button className="btn btn-ghost" onClick={() => setAjustando(true)}><PackagePlus size={16} /> Reponer / contar</button>}
+      </div>
+      <div className="total-ticket" style={{ background: bajo ? 'var(--egreso-soft)' : 'var(--surface-2)', marginBottom: 12 }}>
+        <span>{bajo ? 'Hay que reponer' : 'Hay'}{item.stockMinimo != null && <span className="sub" style={{ fontWeight: 500 }}> · mínimo {cantStock(item.stockMinimo, item.unidad)}</span>}</span>
+        <strong style={{ color: bajo ? 'var(--egreso)' : undefined }}>{cantStock(item.stock, item.unidad)}</strong>
+      </div>
+      {movs.length ? (
+        <table className="tabla">
+          <tbody>
+            {movs.slice(0, 8).map((m) => (
+              <tr key={m.id}>
+                <td>{etiquetaDia(m.createdAt.slice(0, 10), hoy)}
+                  <div className="sub">{ORIGENES[m.origen]}{m.anulacion ? ' anulada' : ''}{m.motivo ? ` · ${m.motivo}` : ''}{m.usuario ? ` · ${m.usuario}` : ''}</div></td>
+                <td className="num"><b style={{ color: m.cantidad > 0 ? 'var(--ingreso)' : 'var(--egreso)' }}>{m.cantidad > 0 ? '+' : ''}{cantStock(m.cantidad, item.unidad)}</b></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : <div className="sub">Sin movimientos de stock todavía.{gestiona && ' Carga lo que hay con un conteo.'}</div>}
+      {ajustando && <AjusteStock items={[{ ...item, tipo }]} onClose={() => setAjustando(false)} />}
+    </div>
+  )
+}
+
 // Insumos que lleva el producto y cuánto aporta cada uno al costo
-function CardReceta({ producto, insumos, verCostos }) {
+function CardReceta({ producto, insumos, verCostos, controlStock }) {
   const { receta, unidad, precio, costo } = producto
   const filas = receta.map((r) => {
     const ins = insumos.find((i) => i.id === r.id)
-    return { ...r, precio: ins?.precio ?? r.precio }
+    return { ...r, precio: ins?.precio ?? r.precio, insumo: ins }
   })
   const margen = precio - (costo ?? 0)
   return (
@@ -37,7 +77,8 @@ function CardReceta({ producto, insumos, verCostos }) {
             {filas.map((r) => (
               <tr key={r.id}>
                 <td>{insumos.some((i) => i.id === r.id) ? <Link to={`/productos/insumo/${r.id}`} className="link">{r.nombre}</Link> : r.nombre}
-                  {verCostos && r.precio !== undefined && <div className="sub">{dinero(r.precio)} / {r.unidad}</div>}</td>
+                  {verCostos && r.precio !== undefined && <div className="sub">{dinero(r.precio)} / {r.unidad}</div>}
+                  {controlStock && r.insumo && <div className="sub" style={porReponer(r.insumo) ? { color: 'var(--egreso)' } : undefined}>stock {cantStock(r.insumo.stock, r.unidad)}{porReponer(r.insumo) && ' · reponer'}</div>}</td>
                 <td className="num">{fmtNum(r.cantidad)} {r.unidad}</td>
                 {verCostos && <td className="num"><b>{r.precio !== undefined ? dinero(r.cantidad * r.precio) : '—'}</b></td>}
               </tr>
@@ -60,7 +101,7 @@ function CardReceta({ producto, insumos, verCostos }) {
 
 export default function ItemDetalle() {
   const { tipo, id } = useParams()
-  const { ingresos, egresos, mermas, hoy, productos, insumos, historialPrecios, puede } = useDatos()
+  const { ingresos, egresos, mermas, hoy, productos, insumos, historialPrecios, puede, controlStock } = useDatos()
   const [periodo, setPeriodo] = useState('90d')
   const [editando, setEditando] = useState(false)
   const [ajustando, setAjustando] = useState(false)
@@ -174,7 +215,8 @@ export default function ItemDetalle() {
         </div>
 
         <div className="stack">
-          {esProducto && (ref.receta.length > 0 || puede('productos.gestionar')) && <CardReceta producto={ref} insumos={insumos} verCostos={puede('productos.ver_costos')} />}
+          {controlStock && llevaStock(ref) && <CardStock tipo={tipo} item={ref} gestiona={puede(esProducto ? 'productos.gestionar' : 'insumos.gestionar')} hoy={hoy} />}
+          {esProducto && (ref.receta.length > 0 || puede('productos.gestionar')) && <CardReceta producto={ref} insumos={insumos} verCostos={puede('productos.ver_costos')} controlStock={controlStock} />}
           {esProducto && (
             <div className="card">
               <div className="card-head"><h2>Historial de precios</h2><History size={18} color="var(--muted)" /></div>

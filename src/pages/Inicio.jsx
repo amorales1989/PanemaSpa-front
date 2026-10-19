@@ -13,7 +13,7 @@ import { fmtNum } from '../lib/items'
 const COLOR = { ingresos: '#2f7d5b', egresos: '#c2513f' }
 
 export default function Inicio() {
-  const { ingresos, egresos, mermas, hoy } = useDatos()
+  const { ingresos, egresos, mermas, hoy, controlStock, reponer } = useDatos()
   const { abrirRegistro, abrirDetalle } = useOutletContext()
   const [periodo, setPeriodo] = useState('30d')
 
@@ -66,6 +66,18 @@ export default function Inicio() {
           <PackageX size={20} color="var(--merma)" /> Merma
         </button>
       </div>
+
+      {controlStock && (reponer.productos.length > 0 || reponer.insumos.length > 0) && (
+        <div className="alerta" style={{ marginBottom: 16, alignItems: 'center' }} role="status">
+          <AlertTriangle size={18} />
+          <span style={{ flex: 1 }}>
+            <b>Por reponer:</b>{' '}
+            {[...reponer.productos, ...reponer.insumos].slice(0, 4).map((x) => x.nombre).join(', ')}
+            {reponer.productos.length + reponer.insumos.length > 4 && ` y ${reponer.productos.length + reponer.insumos.length - 4} más`}
+          </span>
+          <Link className="link" to={`/productos?${reponer.productos.length ? '' : 'tab=insumos&'}reponer=1`}>Ver <ChevronRight size={16} /></Link>
+        </div>
+      )}
 
       <div className="grid kpis">
         <Kpi destacado titulo="Ganancia" valor={ganancia} anterior={p.ing - p.egr - p.mer} Icono={Wallet} />

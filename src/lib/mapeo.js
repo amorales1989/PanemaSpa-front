@@ -20,12 +20,14 @@ export const productoDesdeApi = (p) => ({
   unidad: p.unidad, precio: p.precio, costo: p.costo, activo: p.activo,
   imagen: urlArchivo(p.imagenUrl),
   // Insumos que lleva una unidad (o un kilo) del producto; el precio solo viene a quien ve costos
+  stock: Number(p.stock ?? 0), stockMinimo: p.stockMinimo == null ? null : Number(p.stockMinimo),
   receta: (p.receta ?? []).map((r) => ({ id: r.insumoId, codigo: r.codigo, nombre: r.nombre, unidad: r.unidad, cantidad: Number(r.cantidad), precio: r.precio })),
 })
 
 export const insumoDesdeApi = (i) => ({
   id: i.id, codigo: i.codigo, nombre: i.nombre, categoria: i.categoria ?? 'Sin categoría', categoriaId: i.categoriaId,
   unidad: i.unidad, precio: i.precio, activo: i.activo,
+  stock: Number(i.stock ?? 0), stockMinimo: i.stockMinimo == null ? null : Number(i.stockMinimo),
 })
 
 export const promoDesdeApi = (p) => ({
