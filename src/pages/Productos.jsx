@@ -8,6 +8,7 @@ import ImagenProducto from '../components/ImagenProducto'
 import CatalogoForm from '../components/CatalogoForm'
 import AjustePrecios from '../components/AjustePrecios'
 import AjusteStock from '../components/AjusteStock'
+import IngresoStock from '../components/IngresoStock'
 import { cantStock, llevaStock, porReponer } from '../lib/stock'
 import { statsProductos, statsInsumos } from '../lib/stats'
 import { dinero } from '../lib/format'
@@ -39,6 +40,7 @@ export default function Productos() {
   const [editando, setEditando] = useState(null) // null | 'nuevo' | item
   const [ajustando, setAjustando] = useState(null) // lista de productos a ajustar
   const [reponiendo, setReponiendo] = useState(null) // ítems a reponer
+  const [ingresando, setIngresando] = useState(false)
   const soloReponer = controlStock && params.get('reponer') === '1'
   const aReponer = tab === 'productos' ? reponer.productos : reponer.insumos
 
@@ -145,6 +147,11 @@ export default function Productos() {
         </div>
         <div className="acciones-head">
           <BotonPDF tipo={tab} periodo={periodo} texto={<>PDF<span className="ocultar-movil"> de {tab}</span></>} />
+          {controlStock && gestiona && (
+            <button className="btn btn-pdf" onClick={() => setIngresando(true)}>
+              <PackagePlus size={18} /> Ingresar stock
+            </button>
+          )}
           {gestiona && (
             <button className="btn btn-primary" onClick={() => setEditando('nuevo')}>
               <Plus size={18} /> {tab === 'insumos' ? 'Nuevo insumo' : 'Nuevo producto'}
@@ -297,6 +304,7 @@ export default function Productos() {
       {editando && (
         <CatalogoForm tipo={tab === 'insumos' ? 'insumo' : 'producto'} item={editando === 'nuevo' ? null : editando} onClose={() => setEditando(null)} />
       )}
+      {ingresando && <IngresoStock tipoInicial={tab === 'insumos' ? 'insumo' : 'producto'} onClose={() => setIngresando(false)} />}
       {reponiendo && <AjusteStock items={reponiendo} onClose={() => setReponiendo(null)} />}
       {ajustando && <AjustePrecios productos={ajustando} onClose={() => setAjustando(null)} onAplicado={() => setSeleccion(new Set())} />}
     </>

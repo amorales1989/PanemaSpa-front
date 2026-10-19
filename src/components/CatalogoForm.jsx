@@ -97,7 +97,8 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
   // Solo quien ve los insumos puede armar la receta
   const conReceta = esProducto && insumos.length > 0
   const [stockMinimo, setStockMinimo] = useState(item?.stockMinimo != null ? fmtNum(item.stockMinimo) : '')
-  const [stockInicial, setStockInicial] = useState('')
+  // Stock: al crear es el inicial; al editar, lo que se escriba queda como conteo
+  const [stock, setStock] = useState(item?.stock != null ? fmtNum(item.stock) : '')
   const [intentado, setIntentado] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [errorServidor, setErrorServidor] = useState('')
@@ -118,7 +119,7 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
     categoria: !categoriaFinal && 'Elige o escribe una categoría',
     precio: !precioNum && (esProducto ? 'Falta el precio de venta' : 'Falta el precio de compra'),
     costo: esProducto && !usaReceta && costoNum > precioNum && precioNum > 0 && 'El costo es mayor que el precio de venta',
-    stockInicial: conStock && nuevo && unidad === 'un' && !Number.isInteger(num(stockInicial)) && 'El stock inicial va en unidades enteras',
+    stock: conStock && unidad === 'un' && !Number.isInteger(num(stock)) && 'El stock va en unidades enteras',
     stockMinimo: conStock && unidad === 'un' && !Number.isInteger(num(stockMinimo)) && 'El stock mínimo va en unidades enteras',
     receta: usaReceta && receta.some((r) => !(num(r.cantidad) > 0)) && 'Indica la cantidad de cada insumo de la receta',
   }
@@ -153,9 +154,9 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
         })
       }
       else guardado = await guardarInsumo(datos)
-      // Stock con el que arranca un ítem nuevo
-      if (nuevo && conStock && num(stockInicial) > 0) {
-        await ajustarStock([{ tipo, id: guardado.id, modo: 'conteo', cantidad: num(stockInicial) }], 'Stock inicial')
+      // Stock inicial de un ítem nuevo, o corrección hecha al editar
+      if (conStock && stock !== '' && (nuevo ? num(stock) > 0 : num(stock) !== item.stock)) {
+        await ajustarStock([{ tipo, id: guardado.id, modo: 'conteo', cantidad: num(stock) }], nuevo ? 'Stock inicial' : 'Edición')
       }
       onClose()
     } catch (err) {
@@ -243,15 +244,10 @@ export default function CatalogoForm({ tipo, item, onClose, onEliminado }) {
 
         {conStock && (
           <div className="fila">
-            {nuevo ? (
-              <Campo id="cat-stock-inicial" label={`Stock inicial (${unidad})`} error={ver('stockInicial')} opcional>
-                <input id="cat-stock-inicial" className="input" inputMode="decimal" placeholder="0" value={stockInicial} onChange={(e) => setStockInicial(soloCantidad(e.target.value))} />
-              </Campo>
-            ) : (
-              <Campo id="cat-stock-actual" label="Stock actual">
-                <input id="cat-stock-actual" className="input" readOnly value={`${fmtNum(item.stock)} ${item.unidad}`} title="Se cambia con una reposición o un conteo desde la ficha" />
-              </Campo>
-            )}
+            <Campo id="cat-stock" label={`${nuevo ? 'Stock inicial' : 'Stock actual'} (${unidad})`} error={ver('stock')} opcional={nuevo}>
+              <input id="cat-stock" className="input" inputMode="decimal" placeholder="0" value={stock} onChange={(e) => setStock(soloCantidad(e.target.value))} />
+              {!nuevo && num(stock) !== item.stock && stock !== '' && <div className="sub" style={{ marginTop: 6 }}>Queda registrado como conteo en el historial.</div>}
+            </Campo>
             <Campo id="cat-stock-minimo" label={`Stock mínimo (${unidad})`} error={ver('stockMinimo')} opcional>
               <input id="cat-stock-minimo" className="input" inputMode="decimal" placeholder="Sin aviso" value={stockMinimo} onChange={(e) => setStockMinimo(soloCantidad(e.target.value))} />
             </Campo>

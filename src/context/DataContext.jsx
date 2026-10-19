@@ -311,6 +311,27 @@ export function DataProvider({ children }) {
     avisar('Stock actualizado')
   }, [avisar, refrescarCatalogo])
 
+  // Ingreso de mercadería: suma stock y puede cambiar costo y precio de venta.
+  // items: [{ tipo, id, cantidad, costo?, precio? }]
+  const ingresarStock = useCallback(async (items, motivo) => {
+    try {
+      await api('/stock/ingresos', {
+        metodo: 'POST',
+        body: {
+          motivo,
+          items: items.map((i) => ({
+            [i.tipo === 'producto' ? 'productoId' : 'insumoId']: i.id, cantidad: i.cantidad,
+            ...(i.costo !== undefined && { costo: i.costo }), ...(i.precio !== undefined && { precio: i.precio }),
+          })),
+        },
+      })
+    } catch (e) {
+      throw new Error(mensajeDe(e))
+    }
+    await refrescarCatalogo()
+    avisar(items.length === 1 ? 'Stock ingresado' : `Stock ingresado (${items.length} ítems)`)
+  }, [avisar, refrescarCatalogo])
+
   const movimientosStock = useCallback(async (tipo, id) => {
     const m = await api(`/stock/movimientos?${tipo === 'producto' ? 'productoId' : 'insumoId'}=${id}`)
     return m.map((x) => ({ ...x, cantidad: Number(x.cantidad) }))
@@ -399,12 +420,12 @@ export function DataProvider({ children }) {
     () => ({
       ...datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen,
       guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios,
-      controlStock, ajustarStock, movimientosStock, reponer,
+      controlStock, ajustarStock, ingresarStock, movimientosStock, reponer,
       listas, config, recargarConfig, puede, hoy, recargar: cargar,
     }),
     // hoy cambia en cada render; se usa solo su valor del día
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios, controlStock, ajustarStock, movimientosStock, reponer, listas, config, recargarConfig, puede, hoyIso, cargar],
+    [datos, agregar, anular, guardarPromo, eliminarPromo, toast, exito, catalogo, imagenes, setImagen, guardarProducto, guardarInsumo, eliminarProducto, eliminarInsumo, ajustarPrecios, historialPrecios, controlStock, ajustarStock, ingresarStock, movimientosStock, reponer, listas, config, recargarConfig, puede, hoyIso, cargar],
   )
 
   if (error) {

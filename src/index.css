@@ -614,6 +614,13 @@ button.opcion-registro { font: inherit; text-align: left; width: 100%; }
 
 /* ---------- Configuración ---------- */
 .grid-listas { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; }
+/* Ingreso de stock: una tarjeta por ítem con cantidad, costo y traslado al precio */
+.ingreso-linea { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.ingreso-linea-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.ingreso-linea .campo label { margin-bottom: 6px; }
+.input-unidad.input-unidad-sm input { font-size: 16px; padding: 10px 0; }
+.check-ingreso { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+.check-ingreso input { margin-top: 3px; accent-color: var(--brand); }
 /* Configuración → Empresa: las tarjetas ocupan el ancho en columnas (una sola en el teléfono) */
 .grid-empresa { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: start; }
 .lista-editable ul { list-style: none; margin: 0 0 12px; padding: 0; }
